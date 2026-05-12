@@ -175,6 +175,7 @@ def dashboard(request: Request) -> HTMLResponse:
     event_store: EventStore = request.app.state.event_store
     events = [event_to_dict(event) for event in event_store.get_recent(limit=25)]
     return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "events": events},
+        request=request,
+        name="index.html",
+        context={"events": events},
     )
