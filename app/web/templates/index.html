@@ -3,99 +3,737 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>cctv-ai-edge dashboard</title>
+    <title>cctv-ai-edge</title>
     <style>
+      :root {
+        --bg-primary: #000000;
+        --bg-secondary: #0a0a0a;
+        --bg-card: #111111;
+        --bg-card-hover: #1a1a1a;
+        --bg-surface: #161616;
+        --border: rgba(255,255,255,0.06);
+        --border-hover: rgba(255,255,255,0.12);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255,255,255,0.55);
+        --text-tertiary: rgba(255,255,255,0.35);
+        --accent: #0071e3;
+        --accent-hover: #0077ed;
+        --accent-glow: rgba(0,113,227,0.15);
+        --green: #30d158;
+        --green-bg: rgba(48,209,88,0.1);
+        --orange: #ff9f0a;
+        --orange-bg: rgba(255,159,10,0.1);
+        --radius: 16px;
+        --radius-sm: 10px;
+        --radius-xs: 6px;
+        --transition: 0.2s cubic-bezier(0.25,0.1,0.25,1);
+        --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
       body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #111827;
-        color: #f9fafb;
+        font-family: var(--font);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
       }
 
-      header {
-        padding: 24px;
-        background: #020617;
-        border-bottom: 1px solid #1f2937;
+      /* NAV */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        height: 56px;
+        background: rgba(0,0,0,0.72);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid var(--border);
       }
 
-      main {
-        padding: 24px;
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
       }
 
-      .grid {
+      .nav-brand svg { opacity: 0.9; }
+
+      .nav-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+      }
+
+      /* HERO / UPLOAD SECTION */
+      .hero {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 64px 32px 48px;
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        margin-bottom: 12px;
+      }
+
+      .hero p {
+        font-size: 17px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+
+      /* DROP ZONE */
+      .drop-zone {
+        position: relative;
+        max-width: 640px;
+        margin: 32px auto 0;
+        padding: 56px 32px;
+        border: 1.5px dashed rgba(255,255,255,0.12);
+        border-radius: var(--radius);
+        background: var(--bg-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        transition-property: border-color, background, box-shadow;
+      }
+
+      .drop-zone:hover, .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: rgba(0,113,227,0.04);
+        box-shadow: 0 0 0 1px var(--accent), 0 0 40px var(--accent-glow);
+      }
+
+      .drop-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .drop-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 20px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+      }
+
+      .drop-zone h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      .drop-zone p {
+        font-size: 13px;
+        color: var(--text-tertiary);
+      }
+
+      .drop-zone .browse-link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      /* PROGRESS */
+      .upload-progress {
+        display: none;
+        max-width: 640px;
+        margin: 24px auto 0;
+        padding: 20px 24px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+
+      .upload-progress.active { display: block; }
+
+      .progress-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .progress-filename {
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 400px;
+      }
+
+      .progress-status {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .progress-bar-track {
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255,255,255,0.06);
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .progress-bar-fill.indeterminate {
+        width: 30%;
+        animation: indeterminate 1.2s ease-in-out infinite;
+      }
+
+      @keyframes indeterminate {
+        0% { margin-left: -30%; }
+        100% { margin-left: 100%; }
+      }
+
+      /* RESULTS */
+      .results-section {
+        display: none;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 32px 64px;
+      }
+
+      .results-section.active { display: block; }
+
+      .results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .results-header h2 {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .results-summary {
+        display: flex;
+        gap: 24px;
+      }
+
+      .summary-stat {
+        text-align: center;
+      }
+
+      .summary-stat .value {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .summary-stat .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-top: 2px;
+      }
+
+      /* OBJECT PILLS */
+      .detected-objects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 32px;
+      }
+
+      .obj-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+      }
+
+      .obj-pill .count {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+      }
+
+      /* FRAME GRID */
+      .frames-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 16px;
       }
 
-      .card {
+      .frame-card {
         overflow: hidden;
-        background: #1f2937;
-        border: 1px solid #374151;
-        border-radius: 12px;
+        border-radius: var(--radius);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+        transition-property: border-color, transform, box-shadow;
       }
 
-      .card img {
+      .frame-card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      }
+
+      .frame-card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16/10;
+        object-fit: cover;
+        background: var(--bg-secondary);
+      }
+
+      .frame-meta {
+        padding: 14px 16px;
+      }
+
+      .frame-meta .frame-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-tertiary);
+        margin-bottom: 6px;
+      }
+
+      .frame-meta .frame-detections {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .det-tag {
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: var(--radius-xs);
+        font-weight: 500;
+      }
+
+      .det-tag.people   { background: var(--green-bg); color: var(--green); }
+      .det-tag.vehicles { background: var(--accent-glow); color: #64b5f6; }
+      .det-tag.animals  { background: var(--orange-bg); color: var(--orange); }
+      .det-tag.other    { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+
+      .cat-pill-people   { border-color: rgba(48,209,88,0.3); }
+      .cat-pill-vehicles { border-color: rgba(0,113,227,0.3); }
+      .cat-pill-animals  { border-color: rgba(255,159,10,0.3); }
+
+      /* EVENTS SECTION */
+      .section-divider {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+
+      .section-divider hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin-bottom: 48px;
+      }
+
+      .events-section {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 32px 64px;
+      }
+
+      .events-section h2 {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
+
+      .events-section .subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+      }
+
+      .events-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .event-card {
+        overflow: hidden;
+        border-radius: var(--radius);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+        transition-property: border-color, transform, box-shadow;
+      }
+
+      .event-card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      }
+
+      .event-card img {
         display: block;
         width: 100%;
         height: 180px;
         object-fit: cover;
-        background: #030712;
+        background: var(--bg-secondary);
       }
 
-      .card-body {
-        padding: 14px;
+      .event-body {
+        padding: 14px 16px;
       }
 
-      .muted {
-        color: #9ca3af;
+      .event-body h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 8px;
       }
 
-      .pill {
-        display: inline-block;
-        padding: 4px 8px;
-        color: #dcfce7;
-        background: #166534;
-        border-radius: 999px;
+      .event-row {
+        display: flex;
+        justify-content: space-between;
         font-size: 12px;
+        padding: 3px 0;
       }
 
-      a {
-        color: #93c5fd;
+      .event-row .key { color: var(--text-tertiary); }
+      .event-row .val { color: var(--text-secondary); font-weight: 500; }
+
+      .event-pill {
+        display: inline-block;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 999px;
+        background: var(--green-bg);
+        color: var(--green);
+      }
+
+      .event-timestamp {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-top: 8px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-tertiary);
+        font-size: 14px;
+      }
+
+      /* BUTTON */
+      .btn-analyze-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--accent);
+        border: none;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .btn-analyze-more:hover {
+        background: var(--accent-hover);
+        box-shadow: 0 4px 16px var(--accent-glow);
+      }
+
+      @media (max-width: 640px) {
+        .hero h1 { font-size: 28px; }
+        .hero { padding: 40px 20px 32px; }
+        nav { padding: 0 20px; }
+        .events-section, .results-section, .section-divider { padding-left: 20px; padding-right: 20px; }
+        .frames-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <header>
-      <h1>cctv-ai-edge</h1>
-      <p class="muted">Recent local person-detection events</p>
-    </header>
-    <main>
-      {% if events %}
-        <section class="grid">
-          {% for event in events %}
-            <article class="card">
-              <a href="/snapshots/{{ event.snapshot_filename }}">
-                <img
-                  src="/snapshots/{{ event.snapshot_filename }}"
-                  alt="Snapshot for event {{ event.id }}"
-                >
-              </a>
-              <div class="card-body">
-                <h2>Event #{{ event.id }}</h2>
-                <p><span class="pill">{{ event.event_type }}</span></p>
-                <p><strong>Camera:</strong> {{ event.camera_name }}</p>
-                <p><strong>Confidence:</strong> {{ "%.2f"|format(event.confidence) }}</p>
-                <p><strong>Labels:</strong> {{ event.labels_detected | join(", ") }}</p>
-                <p class="muted">{{ event.timestamp }}</p>
-                <p><a href="/events/{{ event.id }}">View JSON</a></p>
+    <nav>
+      <div class="nav-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        cctv-ai-edge
+      </div>
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        System Online
+      </div>
+    </nav>
+
+    <!-- UPLOAD HERO -->
+    <section class="hero" id="heroSection">
+      <h1>Video Intelligence</h1>
+      <p>Drop a video clip to detect people, vehicles, and animals with on-device AI inference.</p>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="video/*">
+        <div class="drop-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 16 12 12 8 16"/>
+            <line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+        </div>
+        <h3>Drop video here</h3>
+        <p>or <span class="browse-link">browse files</span>&ensp;&middot;&ensp;MP4, MOV, AVI up to 200 MB</p>
+      </div>
+
+      <div class="upload-progress" id="uploadProgress">
+        <div class="progress-header">
+          <span class="progress-filename" id="progressFilename"></span>
+          <span class="progress-status" id="progressStatus">Uploading…</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYSIS RESULTS -->
+    <section class="results-section" id="resultsSection">
+      <div class="results-header">
+        <div>
+          <h2>Analysis Results</h2>
+        </div>
+        <div class="results-summary" id="resultsSummary"></div>
+      </div>
+
+      <div class="detected-objects" id="detectedObjects"></div>
+      <div class="frames-grid" id="framesGrid"></div>
+
+      <div style="text-align:center; margin-top:40px;">
+        <button class="btn-analyze-more" onclick="resetUpload()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+          Analyse Another
+        </button>
+      </div>
+    </section>
+
+    <!-- LIVE EVENTS -->
+    {% if events %}
+    <div class="section-divider"><hr></div>
+    <section class="events-section">
+      <h2>Live Feed Events</h2>
+      <p class="subtitle">Recent detections from the connected camera pipeline</p>
+      <div class="events-grid">
+        {% for event in events %}
+          <article class="event-card">
+            <a href="/snapshots/{{ event.snapshot_filename }}">
+              <img src="/snapshots/{{ event.snapshot_filename }}" alt="Event {{ event.id }}" loading="lazy">
+            </a>
+            <div class="event-body">
+              <h3>Event #{{ event.id }}</h3>
+              <div class="event-row">
+                <span class="key">Type</span>
+                <span class="event-pill">{{ event.event_type }}</span>
               </div>
-            </article>
-          {% endfor %}
-        </section>
-      {% else %}
-        <p>No events yet. Start the server with a video source that contains people.</p>
-      {% endif %}
-    </main>
+              <div class="event-row">
+                <span class="key">Camera</span>
+                <span class="val">{{ event.camera_name }}</span>
+              </div>
+              <div class="event-row">
+                <span class="key">Confidence</span>
+                <span class="val">{{ "%.0f%%"|format(event.confidence * 100) }}</span>
+              </div>
+              <div class="event-row">
+                <span class="key">Labels</span>
+                <span class="val">{{ event.labels_detected | join(", ") }}</span>
+              </div>
+              <p class="event-timestamp">{{ event.timestamp }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <script>
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('fileInput');
+      const uploadProgress = document.getElementById('uploadProgress');
+      const progressFilename = document.getElementById('progressFilename');
+      const progressStatus = document.getElementById('progressStatus');
+      const progressBar = document.getElementById('progressBar');
+      const resultsSection = document.getElementById('resultsSection');
+      const framesGrid = document.getElementById('framesGrid');
+      const detectedObjects = document.getElementById('detectedObjects');
+      const resultsSummary = document.getElementById('resultsSummary');
+
+      ['dragenter','dragover'].forEach(e => {
+        dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('drag-over'); });
+      });
+      ['dragleave','drop'].forEach(e => {
+        dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('drag-over'); });
+      });
+
+      dropZone.addEventListener('drop', ev => {
+        const file = ev.dataTransfer.files[0];
+        if (file) handleUpload(file);
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) handleUpload(fileInput.files[0]);
+      });
+
+      async function handleUpload(file) {
+        progressFilename.textContent = file.name;
+        uploadProgress.classList.add('active');
+        resultsSection.classList.remove('active');
+        progressBar.style.width = '0%';
+        progressBar.classList.remove('indeterminate');
+        progressStatus.textContent = 'Uploading…';
+
+        const formData = new FormData();
+        formData.append('video', file);
+
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/analyse');
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 60);
+              progressBar.style.width = pct + '%';
+            }
+          };
+
+          xhr.upload.onload = () => {
+            progressBar.style.width = '60%';
+            progressStatus.textContent = 'Analysing frames…';
+            progressBar.classList.add('indeterminate');
+          };
+
+          xhr.onload = () => {
+            uploadProgress.classList.remove('active');
+            if (xhr.status === 200) {
+              const data = JSON.parse(xhr.responseText);
+              showResults(data, file.name);
+            } else {
+              alert('Analysis failed: ' + xhr.statusText);
+            }
+          };
+
+          xhr.onerror = () => {
+            uploadProgress.classList.remove('active');
+            alert('Upload failed. Check network and try again.');
+          };
+
+          xhr.send(formData);
+        } catch (err) {
+          uploadProgress.classList.remove('active');
+          alert('Error: ' + err.message);
+        }
+      }
+
+      const categoryLabels = { people: 'People', vehicles: 'Vehicles', animals: 'Animals' };
+
+      function showResults(data, filename) {
+        resultsSection.classList.add('active');
+
+        const totalDetections = data.frames.reduce((sum, f) => sum + f.detections.length, 0);
+        const cats = data.category_summary || {};
+        resultsSummary.innerHTML = `
+          <div class="summary-stat"><div class="value">${data.frames_analysed}</div><div class="label">Frames</div></div>
+          <div class="summary-stat"><div class="value">${totalDetections}</div><div class="label">Detections</div></div>
+          <div class="summary-stat"><div class="value">${cats.people || 0}</div><div class="label">People</div></div>
+          <div class="summary-stat"><div class="value">${cats.vehicles || 0}</div><div class="label">Vehicles</div></div>
+          <div class="summary-stat"><div class="value">${cats.animals || 0}</div><div class="label">Animals</div></div>
+        `;
+
+        detectedObjects.innerHTML = '';
+        const sorted = Object.entries(data.object_summary).sort((a,b) => b[1] - a[1]);
+        sorted.forEach(([label, count]) => {
+          const cat = getCategoryForLabel(label);
+          detectedObjects.innerHTML += `<span class="obj-pill cat-pill-${cat}">${label}<span class="count">${count}</span></span>`;
+        });
+
+        framesGrid.innerHTML = '';
+        data.frames.forEach(frame => {
+          if (frame.detections.length === 0) return;
+          const tags = frame.detections.map(d => {
+            const cat = d.category || getCategoryForLabel(d.label);
+            return `<span class="det-tag ${cat}">${d.label} ${(d.confidence*100).toFixed(0)}%</span>`;
+          }).join('');
+
+          framesGrid.innerHTML += `
+            <div class="frame-card">
+              <img src="/analysis-snapshots/${frame.snapshot_filename}" alt="Frame ${frame.frame_number}" loading="lazy">
+              <div class="frame-meta">
+                <div class="frame-label">Frame ${frame.frame_number}</div>
+                <div class="frame-detections">${tags}</div>
+              </div>
+            </div>`;
+        });
+
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function getCategoryForLabel(label) {
+        const people = ['person'];
+        const vehicles = ['bicycle','car','motorcycle','airplane','bus','train','truck','boat'];
+        const animals = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe'];
+        if (people.includes(label)) return 'people';
+        if (vehicles.includes(label)) return 'vehicles';
+        if (animals.includes(label)) return 'animals';
+        return 'other';
+      }
+
+      function resetUpload() {
+        resultsSection.classList.remove('active');
+        fileInput.value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    </script>
   </body>
 </html>
