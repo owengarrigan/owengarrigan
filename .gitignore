@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local edge runtime data.
+data/*.db
+data/*.db-*
+data/events/*
+!data/events/.gitkeep
+
+# Model weights can be large and should stay local unless intentionally tracked.
+*.pt
+models/*
+!models/.gitkeep

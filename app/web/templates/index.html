@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>cctv-ai-edge dashboard</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #111827;
+        color: #f9fafb;
+      }
+
+      header {
+        padding: 24px;
+        background: #020617;
+        border-bottom: 1px solid #1f2937;
+      }
+
+      main {
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        overflow: hidden;
+        background: #1f2937;
+        border: 1px solid #374151;
+        border-radius: 12px;
+      }
+
+      .card img {
+        display: block;
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        background: #030712;
+      }
+
+      .card-body {
+        padding: 14px;
+      }
+
+      .muted {
+        color: #9ca3af;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 4px 8px;
+        color: #dcfce7;
+        background: #166534;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+
+      a {
+        color: #93c5fd;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>cctv-ai-edge</h1>
+      <p class="muted">Recent local person-detection events</p>
+    </header>
+    <main>
+      {% if events %}
+        <section class="grid">
+          {% for event in events %}
+            <article class="card">
+              <a href="/snapshots/{{ event.snapshot_filename }}">
+                <img
+                  src="/snapshots/{{ event.snapshot_filename }}"
+                  alt="Snapshot for event {{ event.id }}"
+                >
+              </a>
+              <div class="card-body">
+                <h2>Event #{{ event.id }}</h2>
+                <p><span class="pill">{{ event.event_type }}</span></p>
+                <p><strong>Camera:</strong> {{ event.camera_name }}</p>
+                <p><strong>Confidence:</strong> {{ "%.2f"|format(event.confidence) }}</p>
+                <p><strong>Labels:</strong> {{ event.labels_detected | join(", ") }}</p>
+                <p class="muted">{{ event.timestamp }}</p>
+                <p><a href="/events/{{ event.id }}">View JSON</a></p>
+              </div>
+            </article>
+          {% endfor %}
+        </section>
+      {% else %}
+        <p>No events yet. Start the server with a video source that contains people.</p>
+      {% endif %}
+    </main>
+  </body>
+</html>
