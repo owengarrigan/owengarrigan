@@ -120,6 +120,30 @@ class EventStore:
             return None
         return self._row_to_event(row)
 
+    def get_stats(self) -> dict:
+        """Return aggregate statistics about stored events."""
+
+        with self._connect() as connection:
+            total = connection.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+            avg_conf = connection.execute(
+                "SELECT AVG(confidence) FROM events"
+            ).fetchone()[0]
+            rows = connection.execute(
+                "SELECT labels_detected FROM events"
+            ).fetchall()
+
+        label_counts: dict[str, int] = {}
+        for row in rows:
+            labels = json.loads(str(row["labels_detected"]))
+            for label in labels:
+                label_counts[label] = label_counts.get(label, 0) + 1
+
+        return {
+            "total_events": total,
+            "average_confidence": round(avg_conf or 0, 3),
+            "label_counts": label_counts,
+        }
+
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path, check_same_thread=False)
         connection.row_factory = sqlite3.Row

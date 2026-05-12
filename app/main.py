@@ -1,4 +1,5 @@
 import asyncio
+import json as json_module
 import logging
 import shutil
 import tempfile
@@ -15,6 +16,7 @@ from fastapi import FastAPI, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from app.camera.video_reader import VideoReader
 from app.config import Settings, get_settings
@@ -142,6 +144,12 @@ app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "web" / "
 def health(request: Request) -> dict[str, str]:
     settings: Settings = request.app.state.settings
     return {"status": "ok", "app": settings.app_name}
+
+
+@app.get("/stats")
+def stats(request: Request) -> dict[str, Any]:
+    event_store: EventStore = request.app.state.event_store
+    return event_store.get_stats()
 
 
 @app.get("/events")
@@ -341,12 +349,55 @@ def get_analysis_snapshot(filename: str) -> FileResponse:
     raise HTTPException(status_code=404, detail="Analysis snapshot not found")
 
 
+CAMERAS_FILE = Path("./data/cameras.json")
+
+
+class CameraInput(BaseModel):
+    name: str
+    url: str
+    type: str = "unifi"
+
+
+def load_cameras() -> list[dict[str, Any]]:
+    if CAMERAS_FILE.exists():
+        return json_module.loads(CAMERAS_FILE.read_text())
+    return []
+
+
+def save_cameras(cameras: list[dict[str, Any]]) -> None:
+    CAMERAS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CAMERAS_FILE.write_text(json_module.dumps(cameras, indent=2))
+
+
+@app.get("/cameras")
+def list_cameras() -> list[dict[str, Any]]:
+    return load_cameras()
+
+
+@app.post("/cameras")
+def add_camera(camera: CameraInput) -> dict[str, Any]:
+    cameras = load_cameras()
+    entry = {"id": str(uuid.uuid4())[:8], "name": camera.name, "url": camera.url, "type": camera.type}
+    cameras.append(entry)
+    save_cameras(cameras)
+    return entry
+
+
+@app.delete("/cameras/{camera_id}")
+def remove_camera(camera_id: str) -> dict[str, str]:
+    cameras = load_cameras()
+    cameras = [c for c in cameras if c["id"] != camera_id]
+    save_cameras(cameras)
+    return {"status": "deleted"}
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request) -> HTMLResponse:
     event_store: EventStore = request.app.state.event_store
     events = [event_to_dict(event) for event in event_store.get_recent(limit=25)]
+    cameras = load_cameras()
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"events": events},
+        context={"events": events, "cameras": cameras},
     )
