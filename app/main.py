@@ -11,8 +11,9 @@ from pathlib import Path
 from threading import Event
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.camera.video_reader import VideoReader
@@ -133,7 +134,8 @@ async def lifespan(app: FastAPI):
             logger.warning("Detection pipeline did not stop within timeout")
 
 
-app = FastAPI(title="cctv-ai-edge", lifespan=lifespan)
+app = FastAPI(title="Vigil", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "web" / "static")), name="static")
 
 
 @app.get("/health")
@@ -195,17 +197,36 @@ def classify_label(label: str) -> str:
 
 ANALYSIS_MODEL = "yolov8m.pt"
 
+DEFAULT_THRESHOLDS = {"people": 0.45, "vehicles": 0.30, "animals": 0.25}
 
-def analyse_video_file(video_path: str, model_path: str) -> dict[str, Any]:
-    """Run YOLO on sampled frames, detecting people, vehicles, and animals."""
+
+def analyse_video_file(
+    video_path: str,
+    model_path: str,
+    thresholds: dict[str, float] | None = None,
+    enabled_categories: set[str] | None = None,
+) -> dict[str, Any]:
+    """Run YOLO on sampled frames with per-category confidence filtering."""
+
+    thresholds = thresholds or DEFAULT_THRESHOLDS
+    enabled_categories = enabled_categories or {"people", "vehicles", "animals"}
+
+    active_labels: set[str] = set()
+    if "people" in enabled_categories:
+        active_labels |= PEOPLE_LABELS
+    if "vehicles" in enabled_categories:
+        active_labels |= VEHICLE_LABELS
+    if "animals" in enabled_categories:
+        active_labels |= ANIMAL_LABELS
 
     output_dir = ANALYSIS_DIR / str(uuid.uuid4())
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    min_threshold = min(thresholds.values()) if thresholds else 0.2
     detector = YOLODetector(
         model_path=ANALYSIS_MODEL,
-        confidence_threshold=0.2,
-        target_labels=TARGET_LABELS,
+        confidence_threshold=min_threshold,
+        target_labels=active_labels,
     )
 
     frames_data: list[dict[str, Any]] = []
@@ -219,9 +240,17 @@ def analyse_video_file(video_path: str, model_path: str) -> dict[str, Any]:
             if frame_number % 10 != 0:
                 continue
 
-            detections = detector.detect(frame)
+            raw_detections = detector.detect(frame)
+
+            filtered = []
+            for d in raw_detections:
+                category = classify_label(d.label)
+                cat_threshold = thresholds.get(category, 0.3)
+                if d.confidence >= cat_threshold:
+                    filtered.append(d)
+
             det_list = []
-            for d in detections:
+            for d in filtered:
                 category = classify_label(d.label)
                 det_list.append({
                     "label": d.label,
@@ -234,7 +263,7 @@ def analyse_video_file(video_path: str, model_path: str) -> dict[str, Any]:
 
             snapshot_path = save_snapshot(
                 frame=frame,
-                detections=detections,
+                detections=filtered,
                 output_dir=output_dir,
                 camera_name="upload",
             )
@@ -256,11 +285,32 @@ def analyse_video_file(video_path: str, model_path: str) -> dict[str, Any]:
 
 
 @app.post("/analyse")
-async def analyse_upload(request: Request, video: UploadFile) -> dict[str, Any]:
-    """Accept a video upload, run YOLO on sampled frames, return all detections."""
+async def analyse_upload(
+    request: Request,
+    video: UploadFile,
+    people_threshold: float = Form(default=0.45),
+    vehicles_threshold: float = Form(default=0.30),
+    animals_threshold: float = Form(default=0.25),
+    detect_people: bool = Form(default=True),
+    detect_vehicles: bool = Form(default=True),
+    detect_animals: bool = Form(default=True),
+) -> dict[str, Any]:
+    """Accept a video upload with per-category thresholds."""
 
-    settings: Settings = request.app.state.settings
     ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+
+    thresholds = {
+        "people": people_threshold,
+        "vehicles": vehicles_threshold,
+        "animals": animals_threshold,
+    }
+    enabled = set()
+    if detect_people:
+        enabled.add("people")
+    if detect_vehicles:
+        enabled.add("vehicles")
+    if detect_animals:
+        enabled.add("animals")
 
     suffix = Path(video.filename or "upload.mp4").suffix or ".mp4"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=str(ANALYSIS_DIR)) as tmp:
@@ -269,7 +319,7 @@ async def analyse_upload(request: Request, video: UploadFile) -> dict[str, Any]:
 
     try:
         result = await asyncio.to_thread(
-            analyse_video_file, tmp_path, settings.yolo_model_path
+            analyse_video_file, tmp_path, ANALYSIS_MODEL, thresholds, enabled
         )
     finally:
         Path(tmp_path).unlink(missing_ok=True)
