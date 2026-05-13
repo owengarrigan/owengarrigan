@@ -201,6 +201,53 @@ def auth_status() -> dict[str, Any]:
     return {"setup_complete": is_setup_complete()}
 
 
+def parse_natural_language_query(query: str) -> dict[str, Any]:
+    """Parse natural language into structured search filters."""
+    query_lower = query.lower().strip()
+    filters: dict[str, Any] = {}
+
+    people_words = ["person", "people", "someone", "man", "woman", "human", "pedestrian", "visitor", "intruder", "delivery"]
+    vehicle_words = ["car", "van", "truck", "vehicle", "bus", "motorcycle", "bike", "forklift", "trailer"]
+    animal_words = ["fox", "dog", "cat", "animal", "bird", "horse", "deer", "wildlife", "creature"]
+
+    for w in people_words:
+        if w in query_lower:
+            filters["event_type"] = "person_present"
+            break
+    for w in vehicle_words:
+        if w in query_lower:
+            filters["event_type"] = "vehicle_present"
+            filters["query"] = w if w not in ["vehicle"] else None
+            break
+    for w in animal_words:
+        if w in query_lower:
+            filters["event_type"] = "animal_present"
+            filters["query"] = w if w not in ["animal", "wildlife", "creature"] else None
+            break
+
+    if "high confidence" in query_lower or "confident" in query_lower:
+        filters["min_confidence"] = 0.7
+    elif "low confidence" in query_lower:
+        filters["min_confidence"] = 0.2
+
+    if "today" in query_lower or "this morning" in query_lower or "tonight" in query_lower:
+        filters["time_hint"] = "today"
+    elif "yesterday" in query_lower:
+        filters["time_hint"] = "yesterday"
+    elif "this week" in query_lower:
+        filters["time_hint"] = "week"
+
+    if not filters.get("query"):
+        clean = query_lower
+        for w in people_words + vehicle_words + animal_words + ["show me", "find", "all", "the", "from", "last", "night", "today", "yesterday", "this week", "with", "high confidence", "low confidence"]:
+            clean = clean.replace(w, "")
+        clean = clean.strip()
+        if clean and len(clean) > 2:
+            filters["query"] = clean
+
+    return filters
+
+
 @app.get("/events/search")
 def search_events(
     request: Request,
@@ -211,18 +258,90 @@ def search_events(
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
-    """Search and filter events — the 'Find Anything' API."""
+    """Search and filter events — supports natural language queries."""
     event_store: EventStore = request.app.state.event_store
+
+    parsed = {}
+    if q:
+        parsed = parse_natural_language_query(q)
+
+    effective_type = event_type or parsed.get("event_type")
+    effective_conf = min_confidence or parsed.get("min_confidence")
+    effective_query = parsed.get("query") or (q if not parsed.get("event_type") else None)
+
     events = event_store.search_events(
-        query=q, camera=camera, event_type=event_type,
-        min_confidence=min_confidence, limit=limit, offset=offset,
+        query=effective_query, camera=camera, event_type=effective_type,
+        min_confidence=effective_conf, limit=limit, offset=offset,
     )
+
+    descriptions = []
+    for e in events[:20]:
+        desc = _describe_event(e)
+        descriptions.append(desc)
+
     return {
         "results": [event_to_dict(e) for e in events],
+        "descriptions": descriptions,
         "count": len(events),
         "cameras": event_store.get_cameras(),
         "event_types": event_store.get_event_types(),
+        "parsed_filters": parsed,
     }
+
+
+def _describe_event(event: StoredEvent) -> str:
+    """Generate a human-readable description of an event."""
+    labels = event.labels_detected
+    conf = int(event.confidence * 100)
+    camera = event.camera_name
+
+    if "person" in labels:
+        return f"Person detected at {camera} ({conf}% confidence)"
+    elif "dog" in labels or "cat" in labels:
+        animal = "dog" if "dog" in labels else "cat"
+        return f"Animal ({animal}) spotted at {camera} ({conf}% confidence)"
+    elif "car" in labels or "truck" in labels:
+        vehicle = next((l for l in labels if l in ["car", "truck", "bus", "motorcycle"]), "vehicle")
+        return f"{vehicle.title()} detected at {camera} ({conf}% confidence)"
+    else:
+        return f"{', '.join(labels)} detected at {camera} ({conf}% confidence)"
+
+
+ALERTS: list[dict[str, Any]] = []
+
+
+class AlertRule(BaseModel):
+    name: str
+    trigger: str
+    camera: str = ""
+    action: str = "notify"
+    enabled: bool = True
+
+
+ALERT_RULES: list[dict[str, Any]] = []
+
+
+@app.get("/alerts")
+def get_alerts(limit: int = Query(default=50)) -> dict[str, Any]:
+    """Get recent alerts and rules."""
+    return {
+        "alerts": ALERTS[-limit:][::-1],
+        "rules": ALERT_RULES,
+    }
+
+
+@app.post("/alerts/rules")
+def add_alert_rule(rule: AlertRule) -> dict[str, Any]:
+    entry = {"id": str(uuid.uuid4())[:8], **rule.model_dump()}
+    ALERT_RULES.append(entry)
+    return entry
+
+
+@app.delete("/alerts/rules/{rule_id}")
+def delete_alert_rule(rule_id: str) -> dict[str, str]:
+    global ALERT_RULES
+    ALERT_RULES = [r for r in ALERT_RULES if r["id"] != rule_id]
+    return {"status": "deleted"}
 
 
 @app.post("/events/cleanup")
