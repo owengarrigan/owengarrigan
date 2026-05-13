@@ -2,7 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1114">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/vigil_logo.png">
     <title>Vigil — AI Video Intelligence</title>
     <style>
       :root {
@@ -381,7 +386,8 @@
             </div>
             <div class="chart-card">
               <h3>Heatmap</h3>
-              <div class="heatmap-placeholder">Connect a camera to generate heatmaps</div>
+              <canvas id="heatmapCanvas" width="256" height="192" style="width:100%;height:180px;border-radius:8px;background:var(--bg-elevated)"></canvas>
+              <div style="font-size:10px;color:var(--text-tertiary);margin-top:6px;text-align:center" id="heatmapInfo">Loading heatmap data…</div>
             </div>
           </div>
           <div class="analytics-row">
@@ -565,7 +571,17 @@
             </div>
           </div>
 
-          <h3 style="font-size:14px; font-weight:600; margin:28px 0 12px">Recent Alerts</h3>
+          <h3 style="font-size:14px; font-weight:600; margin:28px 0 12px">Webhook Notifications</h3>
+          <div style="max-width:500px; margin-bottom:24px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)">
+            <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:10px">Send alerts to Slack, Discord, or any webhook URL</div>
+            <div style="display:flex; gap:8px">
+              <input class="form-input" id="webhookUrl" placeholder="https://hooks.slack.com/services/..." style="flex:1; font-size:12px">
+              <button class="btn-secondary" onclick="testWebhook()" style="font-size:11px">Test</button>
+            </div>
+            <div id="webhookResult" style="font-size:11px; margin-top:6px; display:none"></div>
+          </div>
+
+          <h3 style="font-size:14px; font-weight:600; margin-bottom:12px">Recent Alerts</h3>
           <div class="alerts-feed" id="alertsFeed">
             <div class="empty-state" style="padding:32px"><p>No alerts triggered yet. Rules will fire when matching detections occur.</p></div>
           </div>
@@ -789,6 +805,58 @@
         });
       }
       document.querySelector('[data-page="health"]').addEventListener('click',()=>setTimeout(loadHealth,50));
+
+      // Webhook test
+      function testWebhook() {
+        const url = document.getElementById('webhookUrl').value.trim();
+        if (!url) return;
+        const el = document.getElementById('webhookResult');
+        el.style.display = 'block';
+        el.style.color = 'var(--text-tertiary)';
+        el.textContent = 'Sending test…';
+        fetch('/notifications/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,message:'Test alert from Vigil'})})
+          .then(r=>r.json()).then(d => {
+            el.style.color = d.success ? 'var(--green)' : 'var(--red)';
+            el.textContent = d.success ? '✓ Webhook delivered successfully' : '✗ Delivery failed — check URL';
+          }).catch(()=>{el.style.color='var(--red)';el.textContent='✗ Request failed';});
+      }
+
+      // Heatmap rendering
+      function loadHeatmap() {
+        fetch('/heatmap').then(r=>r.json()).then(data => {
+          const canvas = document.getElementById('heatmapCanvas');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          const grid = data.grid;
+          if (!grid || !grid.length) {
+            document.getElementById('heatmapInfo').textContent = 'No heatmap data yet — detections will accumulate here';
+            return;
+          }
+          const h = grid.length;
+          const w = grid[0].length;
+          canvas.width = w * 4;
+          canvas.height = h * 4;
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const v = grid[y][x];
+              if (v < 0.01) continue;
+              const r = Math.min(255, v * 510);
+              const g = Math.max(0, 255 - v * 400);
+              const b = Math.max(0, 100 - v * 200);
+              const a = Math.min(0.8, v * 0.9);
+              ctx.fillStyle = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
+              ctx.fillRect(x*4, y*4, 4, 4);
+            }
+          }
+          document.getElementById('heatmapInfo').textContent = `${data.total_detections} detections accumulated • ${data.hotspots.length} hotspots identified`;
+        }).catch(()=>{});
+      }
+      document.querySelector('[data-page="analytics"]').addEventListener('click',()=>setTimeout(loadHeatmap,100));
+
+      // PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+      }
     </script>
   </body>
 </html>

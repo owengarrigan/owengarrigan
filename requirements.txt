@@ -7,3 +7,4 @@ pydantic-settings
 opencv-python
 ultralytics
 numpy
+httpx

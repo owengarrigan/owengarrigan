@@ -19,6 +19,8 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
+from app.notifications import get_notification_log, send_slack, send_webhook
+from app.tracking import HeatmapAccumulator
 from app.camera.pipeline import CameraConfig, PipelineManager
 from app.camera.video_reader import VideoReader
 from app.config import Settings, get_settings
@@ -726,6 +728,49 @@ def remove_camera(camera_id: str) -> dict[str, str]:
     cameras = [c for c in cameras if c["id"] != camera_id]
     save_cameras(cameras)
     return {"status": "deleted"}
+
+
+heatmap = HeatmapAccumulator()
+
+
+@app.get("/heatmap")
+def get_heatmap() -> dict[str, Any]:
+    """Get the accumulated heatmap data."""
+    return {
+        "grid": heatmap.get_normalized(),
+        "hotspots": heatmap.get_hotspots(),
+        "total_detections": heatmap.total_detections,
+        "resolution": {"width": heatmap.width, "height": heatmap.height},
+    }
+
+
+@app.post("/heatmap/reset")
+def reset_heatmap() -> dict[str, str]:
+    heatmap.reset()
+    return {"status": "reset"}
+
+
+@app.get("/notifications/log")
+def notification_log(limit: int = Query(default=50)) -> list[dict[str, Any]]:
+    return get_notification_log(limit)
+
+
+class WebhookTestInput(BaseModel):
+    url: str
+    message: str = "Test alert from Vigil"
+
+
+@app.post("/notifications/test")
+async def test_notification(data: WebhookTestInput) -> dict[str, Any]:
+    """Send a test notification to verify webhook connectivity."""
+    payload = {
+        "text": f"🔔 {data.message}",
+        "source": "Vigil AI",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "type": "test",
+    }
+    success = await send_webhook(data.url, payload)
+    return {"success": success, "url": data.url}
 
 
 @app.get("/", response_class=HTMLResponse)
