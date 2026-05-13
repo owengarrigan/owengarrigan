@@ -19,8 +19,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
+from app.export import events_to_csv, events_to_json_export, generate_case_report
 from app.notifications import get_notification_log, send_slack, send_webhook
 from app.tracking import HeatmapAccumulator
+from app.zones import load_zones, save_zones
 from app.camera.pipeline import CameraConfig, PipelineManager
 from app.camera.video_reader import VideoReader
 from app.config import Settings, get_settings
@@ -731,6 +733,85 @@ def remove_camera(camera_id: str) -> dict[str, str]:
 
 
 heatmap = HeatmapAccumulator()
+
+
+class ZoneInput(BaseModel):
+    name: str
+    camera_id: str = ""
+    zone_type: str = "detection"
+    points: list[dict[str, float]]
+    config: dict[str, Any] = {}
+    color: str = "#3b82f6"
+    enabled: bool = True
+
+
+@app.get("/zones")
+def list_zones() -> list[dict[str, Any]]:
+    return load_zones()
+
+
+@app.post("/zones")
+def create_zone(zone: ZoneInput) -> dict[str, Any]:
+    zones = load_zones()
+    entry = {"id": str(uuid.uuid4())[:8], **zone.model_dump()}
+    zones.append(entry)
+    save_zones(zones)
+    return entry
+
+
+@app.delete("/zones/{zone_id}")
+def delete_zone(zone_id: str) -> dict[str, str]:
+    zones = load_zones()
+    zones = [z for z in zones if z["id"] != zone_id]
+    save_zones(zones)
+    return {"status": "deleted"}
+
+
+@app.get("/export/csv")
+def export_csv(request: Request, limit: int = Query(default=500)) -> Any:
+    """Export events as CSV."""
+    from fastapi.responses import Response
+    event_store: EventStore = request.app.state.event_store
+    events = event_store.get_recent(limit=limit)
+    csv_data = events_to_csv(events)
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=vigil_events.csv"},
+    )
+
+
+@app.get("/export/json")
+def export_json(request: Request, limit: int = Query(default=500)) -> Any:
+    """Export events as JSON file."""
+    from fastapi.responses import Response
+    event_store: EventStore = request.app.state.event_store
+    events = event_store.get_recent(limit=limit)
+    json_data = events_to_json_export(events)
+    return Response(
+        content=json_data,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=vigil_events.json"},
+    )
+
+
+@app.get("/export/case/{case_id}")
+def export_case_report(request: Request, case_id: str) -> Any:
+    """Export a case as a markdown report."""
+    from fastapi.responses import Response
+    event_store: EventStore = request.app.state.event_store
+    cases = load_cases()
+    case = next((c for c in cases if c["id"] == case_id), None)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    events = [event_store.get_event(eid) for eid in case["event_ids"]]
+    events = [e for e in events if e is not None]
+    report = generate_case_report(case, events)
+    return Response(
+        content=report,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f"attachment; filename=case_{case_id}_report.md"},
+    )
 
 
 @app.get("/heatmap")

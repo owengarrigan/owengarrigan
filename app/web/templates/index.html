@@ -172,6 +172,9 @@
       .empty-state svg { margin-bottom: 10px; opacity: 0.2; }
       .empty-state p { font-size: 13px; }
 
+      /* ZONES TOOLBAR */
+      .zones-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+
       /* LIVE GRID */
       .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 14px; }
 
@@ -447,25 +450,33 @@
 
       <!-- ZONES -->
       <div class="page" id="page-zones">
-        <div class="page-header"><div><h1>Zones</h1><div class="subtitle">Define regions for speed limits, counting lines, and restricted areas</div></div><button class="btn-primary">+ New Zone</button></div>
+        <div class="page-header"><div><h1>Zones</h1><div class="subtitle">Draw regions for detection, exclusion, counting lines, and speed limits</div></div></div>
         <div class="page-body">
+          <div class="zones-toolbar">
+            <select class="form-select" id="zoneType" style="font-size:12px">
+              <option value="detection">Detection Zone</option>
+              <option value="exclusion">Exclusion Zone</option>
+              <option value="counting_line">Counting Line</option>
+              <option value="speed_limit">Speed Limit Zone</option>
+            </select>
+            <input class="form-input" id="zoneName" placeholder="Zone name" style="font-size:12px; width:160px">
+            <input type="color" id="zoneColor" value="#3b82f6" style="width:32px; height:32px; border:none; border-radius:6px; cursor:pointer">
+            <button class="btn-primary" onclick="saveCurrentZone()" style="font-size:12px">Save Zone</button>
+            <button class="btn-secondary" onclick="clearDrawing()" style="font-size:11px">Clear</button>
+          </div>
           <div class="zones-container">
             <div class="zone-canvas-wrap">
-              <div class="zone-canvas">Select a camera and draw zones on the preview</div>
+              <canvas id="zoneCanvas" width="960" height="540" style="width:100%; cursor:crosshair; border-radius:8px; background:var(--bg-elevated)"></canvas>
+              <div style="font-size:10px; color:var(--text-tertiary); margin-top:6px">Click to add points • Double-click to close polygon • Right-click to undo</div>
             </div>
-            <div class="zone-list">
-              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--red)"></span> Loading Bay</h4><p>Speed limit: 5 mph &middot; Alert on violation</p></div>
-              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--green)"></span> Main Entrance</h4><p>People counting &middot; In/Out tracking</p></div>
-              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--orange)"></span> Aisle 3</h4><p>Dwell time monitoring &middot; Heatmap</p></div>
-              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--purple)"></span> Restricted Area</h4><p>Intrusion detection &middot; Alert on entry</p></div>
-            </div>
+            <div class="zone-list" id="zonesList"></div>
           </div>
         </div>
       </div>
 
       <!-- DETECTIONS -->
       <div class="page" id="page-detections">
-        <div class="page-header"><div><h1>Detections</h1><div class="subtitle">Real-time event stream from all cameras</div></div></div>
+        <div class="page-header"><div><h1>Detections</h1><div class="subtitle">Real-time event stream from all cameras</div></div><div style="display:flex;gap:6px"><a href="/export/csv" class="btn-secondary" style="text-decoration:none;font-size:11px">↓ CSV</a><a href="/export/json" class="btn-secondary" style="text-decoration:none;font-size:11px">↓ JSON</a></div></div>
         <div class="page-body">
           {% if events %}
           <div class="results-grid">
@@ -805,6 +816,117 @@
         });
       }
       document.querySelector('[data-page="health"]').addEventListener('click',()=>setTimeout(loadHealth,50));
+
+      // Zone drawing
+      let zonePoints = [];
+      let savedZones = [];
+      const zoneCanvas = document.getElementById('zoneCanvas');
+      const zoneCtx = zoneCanvas ? zoneCanvas.getContext('2d') : null;
+
+      if (zoneCanvas) {
+        zoneCanvas.addEventListener('click', (e) => {
+          const rect = zoneCanvas.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width;
+          const y = (e.clientY - rect.top) / rect.height;
+          zonePoints.push({x, y});
+          drawZones();
+        });
+
+        zoneCanvas.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          if (zonePoints.length >= 3) saveCurrentZone();
+        });
+
+        zoneCanvas.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          zonePoints.pop();
+          drawZones();
+        });
+      }
+
+      function drawZones() {
+        if (!zoneCtx) return;
+        const w = zoneCanvas.width;
+        const h = zoneCanvas.height;
+        zoneCtx.clearRect(0, 0, w, h);
+
+        // Draw saved zones
+        savedZones.forEach(z => {
+          if (z.points.length < 2) return;
+          zoneCtx.beginPath();
+          zoneCtx.moveTo(z.points[0].x * w, z.points[0].y * h);
+          z.points.forEach((p, i) => { if (i > 0) zoneCtx.lineTo(p.x * w, p.y * h); });
+          zoneCtx.closePath();
+          zoneCtx.fillStyle = z.color + '20';
+          zoneCtx.fill();
+          zoneCtx.strokeStyle = z.color;
+          zoneCtx.lineWidth = 2;
+          zoneCtx.stroke();
+          // Label
+          zoneCtx.fillStyle = z.color;
+          zoneCtx.font = '12px -apple-system, sans-serif';
+          zoneCtx.fillText(z.name, z.points[0].x * w + 4, z.points[0].y * h + 14);
+        });
+
+        // Draw current polygon in progress
+        if (zonePoints.length > 0) {
+          const color = document.getElementById('zoneColor').value;
+          zoneCtx.beginPath();
+          zoneCtx.moveTo(zonePoints[0].x * w, zonePoints[0].y * h);
+          zonePoints.forEach((p, i) => { if (i > 0) zoneCtx.lineTo(p.x * w, p.y * h); });
+          zoneCtx.strokeStyle = color;
+          zoneCtx.lineWidth = 2;
+          zoneCtx.setLineDash([5, 5]);
+          zoneCtx.stroke();
+          zoneCtx.setLineDash([]);
+
+          // Draw points
+          zonePoints.forEach(p => {
+            zoneCtx.beginPath();
+            zoneCtx.arc(p.x * w, p.y * h, 4, 0, Math.PI * 2);
+            zoneCtx.fillStyle = color;
+            zoneCtx.fill();
+          });
+        }
+      }
+
+      function saveCurrentZone() {
+        if (zonePoints.length < 3) { alert('Draw at least 3 points to create a zone'); return; }
+        const name = document.getElementById('zoneName').value.trim() || 'Zone ' + (savedZones.length + 1);
+        const zoneType = document.getElementById('zoneType').value;
+        const color = document.getElementById('zoneColor').value;
+        const config = {};
+        if (zoneType === 'speed_limit') config.speed_limit_mph = 5;
+        if (zoneType === 'counting_line') config.direction = 'in';
+
+        fetch('/zones', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, zone_type: zoneType, points: zonePoints, color, config, camera_id: '', enabled: true})
+        }).then(r=>r.json()).then(z => {
+          zonePoints = [];
+          document.getElementById('zoneName').value = '';
+          loadZones();
+        });
+      }
+
+      function clearDrawing() { zonePoints = []; drawZones(); }
+
+      function loadZones() {
+        fetch('/zones').then(r=>r.json()).then(zones => {
+          savedZones = zones;
+          drawZones();
+          const list = document.getElementById('zonesList');
+          if (!zones.length) { list.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px;padding:16px">No zones defined. Click on the canvas to draw.</div>'; return; }
+          list.innerHTML = zones.map(z => {
+            const typeLabels = {detection:'Detection',exclusion:'Exclusion',counting_line:'Counting Line',speed_limit:'Speed Limit'};
+            return `<div class="zone-item"><h4><span class="zone-dot" style="background:${z.color}"></span> ${z.name}</h4><p>${typeLabels[z.zone_type]||z.zone_type} &middot; ${z.points.length} points</p><button onclick="deleteZone('${z.id}')" style="font-size:10px;color:var(--text-tertiary);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:4px">Remove</button></div>`;
+          }).join('');
+        });
+      }
+
+      function deleteZone(id) { fetch('/zones/'+id,{method:'DELETE'}).then(()=>loadZones()); }
+      document.querySelector('[data-page="zones"]').addEventListener('click',()=>setTimeout(loadZones,50));
 
       // Webhook test
       function testWebhook() {
