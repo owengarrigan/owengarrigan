@@ -21,7 +21,7 @@ class VideoReader:
         """Return True when the source looks like a network stream."""
 
         scheme = urlparse(self.source).scheme.lower()
-        return scheme in {"rtsp", "rtmp", "http", "https"}
+        return scheme in {"rtsp", "rtsps", "rtmp", "http", "https"}
 
     def open(self) -> None:
         """Open the configured video source and fail fast on bad input."""
@@ -34,7 +34,18 @@ class VideoReader:
             capture_source = str(video_path)
 
         logger.info("Opening video source: %s", self.source)
-        self.capture = cv2.VideoCapture(capture_source)
+
+        if self.is_stream:
+            env_options = {
+                cv2.CAP_PROP_OPEN_TIMEOUT_MSEC: 10000,
+                cv2.CAP_PROP_READ_TIMEOUT_MSEC: 10000,
+            }
+            self.capture = cv2.VideoCapture(capture_source, cv2.CAP_FFMPEG)
+            for prop, val in env_options.items():
+                self.capture.set(prop, val)
+        else:
+            self.capture = cv2.VideoCapture(capture_source)
+
         if not self.capture.isOpened():
             raise RuntimeError(f"Could not open video source: {self.source}")
 
