@@ -167,6 +167,9 @@
       .empty-state svg { margin-bottom: 10px; opacity: 0.2; }
       .empty-state p { font-size: 13px; }
 
+      /* LIVE GRID */
+      .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 14px; }
+
       /* AI SEARCH */
       .ai-search-box { max-width: 640px; position: relative; margin-bottom: 12px; }
       .ai-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
@@ -231,6 +234,10 @@
 
       <div class="nav-section">
         <div class="nav-section-label">Monitor</div>
+        <div class="nav-item" onclick="showPage('liveview')" data-page="liveview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Live View</span>
+        </div>
         <div class="nav-item" onclick="showPage('cameras')" data-page="cameras">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <span>Cameras</span>
@@ -271,7 +278,19 @@
       </div>
 
       <div class="nav-section">
+        <div class="nav-section-label">Investigate</div>
+        <div class="nav-item" onclick="showPage('cases')" data-page="cases">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Case Manager</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
         <div class="nav-section-label">System</div>
+        <div class="nav-item" onclick="showPage('health')" data-page="health">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>System Health</span>
+        </div>
         <div class="nav-item" onclick="showPage('settings')" data-page="settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Settings</span>
@@ -392,6 +411,16 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE VIEW -->
+      <div class="page" id="page-liveview">
+        <div class="page-header"><div><h1>Live View</h1><div class="subtitle">Multi-camera grid — all feeds at a glance</div></div></div>
+        <div class="page-body">
+          <div class="live-grid" id="liveGrid">
+            <div class="empty-state"><p>Add cameras to see live feeds here. Go to Cameras → Add a UniFi or RTSP stream.</p></div>
           </div>
         </div>
       </div>
@@ -543,6 +572,40 @@
         </div>
       </div>
 
+      <!-- CASE MANAGER -->
+      <div class="page" id="page-cases">
+        <div class="page-header"><div><h1>Case Manager</h1><div class="subtitle">Build incident reports, attach evidence, export</div></div><button class="btn-primary" onclick="showNewCaseForm()">+ New Case</button></div>
+        <div class="page-body">
+          <div id="newCaseForm" style="display:none; max-width:500px; margin-bottom:24px; padding:18px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius)">
+            <input class="form-input" id="caseTitle" placeholder="Case title (e.g. Break-in attempt 12 May)" style="width:100%; margin-bottom:8px">
+            <textarea class="form-input" id="caseDesc" placeholder="Description / notes" style="width:100%; height:80px; resize:vertical; margin-bottom:10px"></textarea>
+            <div style="display:flex; gap:8px"><button class="btn-primary" onclick="createCase()">Create Case</button><button class="btn-secondary" onclick="document.getElementById('newCaseForm').style.display='none'">Cancel</button></div>
+          </div>
+          <div id="casesList"></div>
+        </div>
+      </div>
+
+      <!-- SYSTEM HEALTH -->
+      <div class="page" id="page-health">
+        <div class="page-header"><div><h1>System Health</h1><div class="subtitle">Real-time processing status and resource usage</div></div></div>
+        <div class="page-body">
+          <div class="stats-grid" id="healthStats">
+            <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="stat-value" id="hStatus" style="color:var(--green)">Online</div><div class="stat-label">System Status</div></div>
+            <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8l-2 4h12z"/></svg></div><div class="stat-value" id="hModel">YOLO11m</div><div class="stat-label">Inference Model</div><div class="stat-sub">20.1M parameters</div></div>
+            <div class="stat-card"><div class="stat-icon purple"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="stat-value" id="hEvents">—</div><div class="stat-label">Total Events</div></div>
+            <div class="stat-card"><div class="stat-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="stat-value" id="hSnapshots">—</div><div class="stat-label">Snapshots</div></div>
+            <div class="stat-card"><div class="stat-icon cyan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="5" width="15" height="14" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><div class="stat-value" id="hPipelines">0</div><div class="stat-label">Active Pipelines</div></div>
+          </div>
+          <div style="margin-top:20px">
+            <h3 style="font-size:14px; font-weight:600; margin-bottom:12px">Storage</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:500px">
+              <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)"><div style="font-size:12px; color:var(--text-tertiary)">Database</div><div style="font-size:18px; font-weight:700; margin-top:4px" id="hDbSize">—</div></div>
+              <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)"><div style="font-size:12px; color:var(--text-tertiary)">Snapshots</div><div style="font-size:18px; font-weight:700; margin-top:4px" id="hSnapSize">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
         <div class="page-header"><div><h1>Settings</h1><div class="subtitle">Detection thresholds, model, and account</div></div></div>
@@ -670,6 +733,62 @@
         });
       }
       document.querySelector('[data-page="search"]').addEventListener('click',()=>{if(!document.getElementById('searchQuery').value)return;setTimeout(runSearch,100);});
+
+      // Live View
+      function loadLiveView() {
+        fetch('/cameras').then(r=>r.json()).then(cams => {
+          const grid = document.getElementById('liveGrid');
+          if (!cams.length) { grid.innerHTML = '<div class="empty-state"><p>No cameras added. Go to Cameras to add feeds.</p></div>'; return; }
+          grid.innerHTML = cams.map(cam => {
+            if (cam.type === 'unifi') {
+              return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><iframe src="${cam.url}" style="width:100%;aspect-ratio:16/9;border:none" allow="autoplay;fullscreen;encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" loading="lazy"></iframe><div style="padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border-top:1px solid var(--border)"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green)"></span>${cam.name}</div></div>`;
+            }
+            return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;color:var(--text-tertiary);font-size:12px;text-align:center"><div><div style="font-weight:600;margin-bottom:4px">${cam.name}</div><code style="font-size:10px">${cam.url}</code><div style="margin-top:8px;color:var(--green);font-size:10px">RTSP &middot; Processing</div></div></div>`;
+          }).join('');
+        });
+      }
+      document.querySelector('[data-page="liveview"]').addEventListener('click',()=>setTimeout(loadLiveView,50));
+
+      // Case Manager
+      function showNewCaseForm() { document.getElementById('newCaseForm').style.display = 'block'; }
+      function createCase() {
+        const title = document.getElementById('caseTitle').value.trim();
+        const desc = document.getElementById('caseDesc').value.trim();
+        if (!title) return;
+        fetch('/cases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description:desc,event_ids:[]})}).then(r=>r.json()).then(()=>{
+          document.getElementById('caseTitle').value='';
+          document.getElementById('caseDesc').value='';
+          document.getElementById('newCaseForm').style.display='none';
+          loadCases();
+        });
+      }
+      function loadCases() {
+        fetch('/cases').then(r=>r.json()).then(cases => {
+          const el = document.getElementById('casesList');
+          if (!cases.length) { el.innerHTML = '<div class="empty-state"><p>No cases yet. Create one to start building an incident report.</p></div>'; return; }
+          el.innerHTML = cases.map(c => {
+            const statusColor = c.status==='open' ? 'var(--orange)' : c.status==='closed' ? 'var(--green)' : 'var(--text-tertiary)';
+            return `<div class="rule-card" style="margin-bottom:10px">
+              <div class="rule-icon" style="background:var(--accent-soft);color:var(--accent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div class="rule-info"><div class="rule-name">${c.title}</div><div class="rule-desc">${c.description||'No description'} &middot; ${c.event_ids.length} events &middot; ${c.notes.length} notes</div></div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:${statusColor}20;color:${statusColor}">${c.status}</div>
+            </div>`;
+          }).join('');
+        });
+      }
+      document.querySelector('[data-page="cases"]').addEventListener('click',()=>setTimeout(loadCases,50));
+
+      // System Health
+      function loadHealth() {
+        fetch('/system/health').then(r=>r.json()).then(d => {
+          document.getElementById('hEvents').textContent = d.total_events;
+          document.getElementById('hSnapshots').textContent = d.snapshots_count;
+          document.getElementById('hPipelines').textContent = d.active_pipelines;
+          document.getElementById('hDbSize').textContent = d.database_size_mb + ' MB';
+          document.getElementById('hSnapSize').textContent = d.snapshots_size_mb + ' MB';
+        });
+      }
+      document.querySelector('[data-page="health"]').addEventListener('click',()=>setTimeout(loadHealth,50));
     </script>
   </body>
 </html>

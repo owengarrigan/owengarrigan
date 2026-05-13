@@ -562,6 +562,131 @@ def get_analysis_snapshot(filename: str) -> FileResponse:
 
 
 CAMERAS_FILE = Path("./data/cameras.json")
+CASES_FILE = Path("./data/cases.json")
+
+
+class CaseInput(BaseModel):
+    title: str
+    description: str = ""
+    event_ids: list[int] = []
+
+
+class CaseNoteInput(BaseModel):
+    note: str
+
+
+def load_cases() -> list[dict[str, Any]]:
+    if CASES_FILE.exists():
+        return json_module.loads(CASES_FILE.read_text())
+    return []
+
+
+def save_cases(cases: list[dict[str, Any]]) -> None:
+    CASES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CASES_FILE.write_text(json_module.dumps(cases, indent=2))
+
+
+@app.get("/cases")
+def list_cases() -> list[dict[str, Any]]:
+    return load_cases()
+
+
+@app.post("/cases")
+def create_case(case: CaseInput) -> dict[str, Any]:
+    cases = load_cases()
+    entry = {
+        "id": str(uuid.uuid4())[:8],
+        "title": case.title,
+        "description": case.description,
+        "event_ids": case.event_ids,
+        "notes": [],
+        "status": "open",
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    cases.append(entry)
+    save_cases(cases)
+    return entry
+
+
+@app.post("/cases/{case_id}/events")
+def add_events_to_case(case_id: str, event_ids: list[int]) -> dict[str, Any]:
+    cases = load_cases()
+    for case in cases:
+        if case["id"] == case_id:
+            case["event_ids"] = list(set(case["event_ids"] + event_ids))
+            save_cases(cases)
+            return case
+    raise HTTPException(status_code=404, detail="Case not found")
+
+
+@app.post("/cases/{case_id}/notes")
+def add_note_to_case(case_id: str, data: CaseNoteInput) -> dict[str, Any]:
+    cases = load_cases()
+    for case in cases:
+        if case["id"] == case_id:
+            case["notes"].append({
+                "text": data.note,
+                "timestamp": datetime.now(UTC).isoformat(),
+            })
+            save_cases(cases)
+            return case
+    raise HTTPException(status_code=404, detail="Case not found")
+
+
+@app.patch("/cases/{case_id}/status")
+def update_case_status(case_id: str, status: str = Query(...)) -> dict[str, Any]:
+    cases = load_cases()
+    for case in cases:
+        if case["id"] == case_id:
+            case["status"] = status
+            save_cases(cases)
+            return case
+    raise HTTPException(status_code=404, detail="Case not found")
+
+
+@app.delete("/cases/{case_id}")
+def delete_case(case_id: str) -> dict[str, str]:
+    cases = load_cases()
+    cases = [c for c in cases if c["id"] != case_id]
+    save_cases(cases)
+    return {"status": "deleted"}
+
+
+@app.get("/system/health")
+def system_health(request: Request) -> dict[str, Any]:
+    """Detailed system health for the status panel."""
+    import os
+    settings: Settings = request.app.state.settings
+    event_store: EventStore = request.app.state.event_store
+    manager: PipelineManager | None = getattr(request.app.state, "pipeline_manager", None)
+
+    db_size = 0
+    if settings.database_path.exists():
+        db_size = settings.database_path.stat().st_size
+
+    snapshots_size = 0
+    snapshots_count = 0
+    if settings.snapshots_dir.exists():
+        for f in settings.snapshots_dir.iterdir():
+            if f.is_file():
+                snapshots_size += f.stat().st_size
+                snapshots_count += 1
+
+    pipelines = manager.get_status() if manager else []
+    active_pipelines = sum(1 for p in pipelines if p.get("running"))
+
+    return {
+        "status": "online",
+        "model": "yolo11m",
+        "model_params": "20.1M",
+        "database_size_mb": round(db_size / 1024 / 1024, 2),
+        "snapshots_count": snapshots_count,
+        "snapshots_size_mb": round(snapshots_size / 1024 / 1024, 2),
+        "total_events": event_store.get_event_count(),
+        "active_pipelines": active_pipelines,
+        "pipelines": pipelines,
+        "uptime": "running",
+    }
 
 
 class CameraInput(BaseModel):
