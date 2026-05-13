@@ -18,6 +18,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
+from app.camera.pipeline import CameraConfig, PipelineManager
 from app.camera.video_reader import VideoReader
 from app.config import Settings, get_settings
 from app.detection.yolo_detector import YOLODetector
@@ -116,6 +118,12 @@ async def lifespan(app: FastAPI):
     event_store = EventStore(settings.database_path)
     event_store.initialize()
 
+    pipeline_manager = PipelineManager(
+        model_path="yolo11m.pt",
+        event_store=event_store,
+        snapshots_dir=settings.snapshots_dir,
+    )
+
     stop_event = Event()
     pipeline_task = asyncio.create_task(
         asyncio.to_thread(run_detection_pipeline, settings, event_store, stop_event)
@@ -125,10 +133,12 @@ async def lifespan(app: FastAPI):
     app.state.event_store = event_store
     app.state.stop_event = stop_event
     app.state.pipeline_task = pipeline_task
+    app.state.pipeline_manager = pipeline_manager
 
     yield
 
     stop_event.set()
+    pipeline_manager.stop_all()
     if not pipeline_task.done():
         try:
             await asyncio.wait_for(asyncio.shield(pipeline_task), timeout=5)
@@ -150,6 +160,89 @@ def health(request: Request) -> dict[str, str]:
 def stats(request: Request) -> dict[str, Any]:
     event_store: EventStore = request.app.state.event_store
     return event_store.get_stats()
+
+
+class LoginInput(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/auth/setup")
+def auth_setup(data: LoginInput) -> dict[str, Any]:
+    """Create the first admin account (only works if no users exist)."""
+    if is_setup_complete():
+        raise HTTPException(status_code=400, detail="Setup already complete")
+    if not create_user(data.username, data.password):
+        raise HTTPException(status_code=400, detail="User already exists")
+    token = verify_login(data.username, data.password)
+    return {"status": "ok", "token": token, "username": data.username}
+
+
+@app.post("/auth/login")
+def auth_login(data: LoginInput) -> dict[str, Any]:
+    """Authenticate and return a session token."""
+    token = verify_login(data.username, data.password)
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return {"token": token, "username": data.username}
+
+
+@app.post("/auth/logout")
+def auth_logout(request: Request) -> dict[str, str]:
+    """Invalidate the current session."""
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    logout(token)
+    return {"status": "ok"}
+
+
+@app.get("/auth/status")
+def auth_status() -> dict[str, Any]:
+    """Check if setup is complete."""
+    return {"setup_complete": is_setup_complete()}
+
+
+@app.get("/events/search")
+def search_events(
+    request: Request,
+    q: str | None = Query(default=None),
+    camera: str | None = Query(default=None),
+    event_type: str | None = Query(default=None),
+    min_confidence: float | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    """Search and filter events — the 'Find Anything' API."""
+    event_store: EventStore = request.app.state.event_store
+    events = event_store.search_events(
+        query=q, camera=camera, event_type=event_type,
+        min_confidence=min_confidence, limit=limit, offset=offset,
+    )
+    return {
+        "results": [event_to_dict(e) for e in events],
+        "count": len(events),
+        "cameras": event_store.get_cameras(),
+        "event_types": event_store.get_event_types(),
+    }
+
+
+@app.post("/events/cleanup")
+def cleanup_events(
+    request: Request,
+    keep: int = Query(default=1000, ge=100, le=50000),
+) -> dict[str, Any]:
+    """Delete oldest events beyond the retention limit."""
+    event_store: EventStore = request.app.state.event_store
+    deleted = event_store.cleanup_old_events(keep_count=keep)
+    return {"deleted": deleted, "remaining": event_store.get_event_count()}
+
+
+@app.get("/pipeline/status")
+def pipeline_status(request: Request) -> list[dict[str, Any]]:
+    """Get status of all running camera pipelines."""
+    manager: PipelineManager | None = getattr(request.app.state, "pipeline_manager", None)
+    if manager:
+        return manager.get_status()
+    return []
 
 
 @app.get("/events")
@@ -203,7 +296,7 @@ def classify_label(label: str) -> str:
     return "other"
 
 
-ANALYSIS_MODEL = "yolov8m.pt"
+ANALYSIS_MODEL = "yolo11m.pt"
 
 DEFAULT_THRESHOLDS = {"people": 0.45, "vehicles": 0.30, "animals": 0.25}
 

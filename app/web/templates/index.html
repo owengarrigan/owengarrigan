@@ -666,6 +666,69 @@
 
       .settings-saved.show { display: inline-flex; }
 
+      /* ======= FIND ANYTHING PAGE ======= */
+      .search-panel {
+        max-width: 720px;
+        margin-bottom: 24px;
+      }
+
+      .search-row { margin-bottom: 12px; }
+
+      .search-main {
+        width: 100%;
+        padding: 12px 18px;
+        font-size: 15px;
+        border-radius: var(--radius);
+      }
+
+      .search-filters {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .search-conf-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .search-results-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .btn-cleanup {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--red);
+        background: var(--red-bg);
+        border: 1px solid rgba(248,113,113,0.2);
+        border-radius: 999px;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .btn-cleanup:hover { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); }
+
+      .search-results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px;
+      }
+
       /* ======= CAMERAS PAGE ======= */
       .add-camera-form {
         max-width: 560px;
@@ -904,6 +967,10 @@
           <span>Detections</span>
           <span class="nav-badge" id="detBadge">{{ events|length }}</span>
         </div>
+        <div class="nav-item" onclick="showPage('search')" data-page="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Find Anything</span>
+        </div>
       </nav>
 
       <div class="sidebar-section-label">System</div>
@@ -1098,6 +1165,44 @@
             <p>No detections yet. Analyse a video or connect a camera.</p>
           </div>
           {% endif %}
+        </div>
+      </div>
+
+      <!-- ===== FIND ANYTHING ===== -->
+      <div class="page" id="page-search">
+        <div class="page-header"><div><h1>Find Anything</h1><p>Search all detections by type, camera, confidence, or keyword</p></div></div>
+        <div class="page-body">
+          <div class="search-panel">
+            <div class="search-row">
+              <input class="form-input search-main" id="searchQuery" type="text" placeholder="Search detections… (e.g. dog, person, front-gate)" oninput="debounceSearch()">
+            </div>
+            <div class="search-filters">
+              <select class="form-select" id="searchCamera" onchange="runSearch()">
+                <option value="">All Cameras</option>
+              </select>
+              <select class="form-select" id="searchType" onchange="runSearch()">
+                <option value="">All Types</option>
+                <option value="person_present">Person</option>
+                <option value="animal_present">Animal</option>
+                <option value="vehicle_present">Vehicle</option>
+              </select>
+              <div class="search-conf-row">
+                <span class="tuning-label">Min Confidence</span>
+                <input type="range" class="tuning-slider" id="searchConf" min="0" max="90" value="0" oninput="document.getElementById('searchConfVal').textContent=this.value+'%'; runSearch()">
+                <span class="tuning-value" id="searchConfVal">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="search-results-header" id="searchResultsHeader" style="display:none">
+            <span id="searchResultCount"></span>
+            <button class="btn-cleanup" onclick="cleanupOldEvents()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14H7L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              Clean Up Old
+            </button>
+          </div>
+
+          <div class="search-results-grid" id="searchResults"></div>
         </div>
       </div>
 
@@ -1331,6 +1436,76 @@
         fileInput.value = '';
         pendingFile = null;
       }
+
+      /* ---- Find Anything (Search) ---- */
+      let searchTimeout;
+      function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(runSearch, 300);
+      }
+
+      function runSearch() {
+        const q = document.getElementById('searchQuery').value.trim();
+        const camera = document.getElementById('searchCamera').value;
+        const eventType = document.getElementById('searchType').value;
+        const minConf = parseInt(document.getElementById('searchConf').value) / 100;
+
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (camera) params.set('camera', camera);
+        if (eventType) params.set('event_type', eventType);
+        if (minConf > 0) params.set('min_confidence', minConf);
+        params.set('limit', '100');
+
+        fetch('/events/search?' + params.toString())
+          .then(r => r.json())
+          .then(data => {
+            const header = document.getElementById('searchResultsHeader');
+            header.style.display = 'flex';
+            document.getElementById('searchResultCount').textContent = data.count + ' results found';
+
+            const camSelect = document.getElementById('searchCamera');
+            if (camSelect.options.length <= 1 && data.cameras) {
+              data.cameras.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c;
+                camSelect.appendChild(opt);
+              });
+            }
+
+            const grid = document.getElementById('searchResults');
+            if (!data.results.length) {
+              grid.innerHTML = '<div class="empty-state"><p>No results matching your filters</p></div>';
+              return;
+            }
+
+            grid.innerHTML = data.results.map(e => `
+              <div class="event-card">
+                <a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" alt="Event ${e.id}" loading="lazy"></a>
+                <div class="event-body">
+                  <h3>Event #${e.id}</h3>
+                  <div class="event-row"><span class="key">Type</span><span class="event-pill">${e.event_type}</span></div>
+                  <div class="event-row"><span class="key">Camera</span><span class="val">${e.camera_name}</span></div>
+                  <div class="event-row"><span class="key">Confidence</span><span class="val">${(e.confidence*100).toFixed(0)}%</span></div>
+                  <div class="event-row"><span class="key">Labels</span><span class="val">${e.labels_detected.join(', ')}</span></div>
+                  <p class="event-timestamp">${e.timestamp}</p>
+                </div>
+              </div>`).join('');
+          });
+      }
+
+      function cleanupOldEvents() {
+        if (!confirm('Delete old detections? This keeps the most recent 1000 events and removes the rest.')) return;
+        fetch('/events/cleanup?keep=1000', { method: 'POST' })
+          .then(r => r.json())
+          .then(d => {
+            alert('Cleaned up ' + d.deleted + ' old events. ' + d.remaining + ' remaining.');
+            runSearch();
+          });
+      }
+
+      // Load initial search on page show
+      document.querySelector('[data-page="search"]').addEventListener('click', () => setTimeout(runSearch, 100));
 
       /* ---- Cameras ---- */
       function loadCameras() {
