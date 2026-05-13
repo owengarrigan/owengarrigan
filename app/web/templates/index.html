@@ -3,1587 +3,550 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vigil</title>
+    <title>Vigil — AI Video Intelligence</title>
     <style>
       :root {
-        --bg-base: #101318;
-        --bg-surface: #161a21;
-        --bg-card: #1c2028;
-        --bg-card-hover: #222730;
-        --bg-elevated: #252a34;
-        --bg-sidebar: #0e1117;
-        --bg-input: #1a1e26;
-        --border: rgba(255,255,255,0.07);
-        --border-hover: rgba(255,255,255,0.14);
-        --text-primary: #f0f2f5;
-        --text-secondary: rgba(240,242,245,0.55);
-        --text-tertiary: rgba(240,242,245,0.32);
+        --bg-base: #0f1114;
+        --bg-surface: #151921;
+        --bg-card: #1a1f28;
+        --bg-card-hover: #1f2531;
+        --bg-elevated: #242b37;
+        --bg-sidebar: #0c0e12;
+        --bg-input: #181d25;
+        --border: rgba(255,255,255,0.06);
+        --border-hover: rgba(255,255,255,0.12);
+        --text-primary: #f1f3f6;
+        --text-secondary: rgba(241,243,246,0.55);
+        --text-tertiary: rgba(241,243,246,0.30);
         --accent: #3b82f6;
         --accent-hover: #2563eb;
-        --accent-glow: rgba(59,130,246,0.12);
-        --accent-soft: rgba(59,130,246,0.08);
+        --accent-glow: rgba(59,130,246,0.10);
+        --accent-soft: rgba(59,130,246,0.07);
         --green: #34d399;
-        --green-bg: rgba(52,211,153,0.1);
-        --green-border: rgba(52,211,153,0.25);
+        --green-bg: rgba(52,211,153,0.08);
         --orange: #fbbf24;
-        --orange-bg: rgba(251,191,36,0.1);
-        --orange-border: rgba(251,191,36,0.25);
+        --orange-bg: rgba(251,191,36,0.08);
         --blue: #60a5fa;
-        --blue-bg: rgba(96,165,250,0.1);
-        --blue-border: rgba(96,165,250,0.25);
+        --blue-bg: rgba(96,165,250,0.08);
         --red: #f87171;
-        --red-bg: rgba(248,113,113,0.1);
+        --red-bg: rgba(248,113,113,0.08);
         --purple: #a78bfa;
-        --purple-bg: rgba(167,139,250,0.1);
+        --purple-bg: rgba(167,139,250,0.08);
+        --cyan: #22d3ee;
+        --cyan-bg: rgba(34,211,238,0.08);
         --radius: 14px;
         --radius-sm: 10px;
         --radius-xs: 6px;
-        --transition: 0.2s cubic-bezier(0.25,0.1,0.25,1);
-        --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
-        --sidebar-w: 224px;
+        --transition: 0.15s cubic-bezier(0.25,0.1,0.25,1);
+        --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+        --sidebar-w: 240px;
+        --topbar-h: 0px;
       }
-
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: var(--font); background: var(--bg-base); color: var(--text-primary); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; }
 
-      body {
-        font-family: var(--font);
-        background: var(--bg-base);
-        color: var(--text-primary);
-        -webkit-font-smoothing: antialiased;
-        min-height: 100vh;
-        display: flex;
-      }
+      /* SIDEBAR */
+      .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 200; overflow-y: auto; }
+      .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; }
+      .sidebar-brand img { width: 28px; height: 28px; border-radius: 7px; }
+      .sidebar-brand span { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+      .sidebar-brand .badge-pro { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; background: linear-gradient(135deg, var(--accent), var(--purple)); color: white; margin-left: 4px; }
 
-      /* ======= SIDEBAR ======= */
-      .sidebar {
-        position: fixed;
-        top: 0; left: 0; bottom: 0;
-        width: var(--sidebar-w);
-        background: var(--bg-sidebar);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        z-index: 200;
-      }
-
-      .sidebar-brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 22px 20px 20px;
-      }
-
-      .sidebar-brand img {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-      }
-
-      .sidebar-brand span {
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-      }
-
-      .sidebar-section-label {
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-tertiary);
-        padding: 16px 20px 6px;
-      }
-
-      .sidebar-nav { flex: 1; padding: 4px 10px; }
-
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 12px;
-        margin-bottom: 1px;
-        border-radius: var(--radius-sm);
-        font-size: 13.5px;
-        font-weight: 500;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: var(--transition);
-      }
-
-      .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
-
-      .nav-item.active {
-        background: var(--accent-soft);
-        color: var(--accent);
-      }
-
-      .nav-item svg { width: 18px; height: 18px; opacity: 0.5; flex-shrink: 0; }
+      .nav-section { padding: 12px 12px 4px; }
+      .nav-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); padding: 0 8px 6px; }
+      .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; margin-bottom: 1px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
+      .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+      .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+      .nav-item svg { width: 16px; height: 16px; opacity: 0.45; flex-shrink: 0; }
       .nav-item.active svg { opacity: 1; }
+      .nav-badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+      .nav-badge.green { background: var(--green-bg); color: var(--green); }
+      .nav-tag { margin-left: auto; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 5px; border-radius: 4px; }
+      .nav-tag.new { background: var(--green-bg); color: var(--green); }
+      .nav-tag.beta { background: var(--orange-bg); color: var(--orange); }
 
-      .nav-badge {
-        margin-left: auto;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 1px 7px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-      }
+      .sidebar-footer { margin-top: auto; padding: 12px 18px; border-top: 1px solid var(--border); }
+      .sidebar-footer .plan-info { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; }
+      .sidebar-footer .plan-name { font-weight: 600; color: var(--accent); }
+      .sidebar-footer .status-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-tertiary); }
+      .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(52,211,153,0.4); }
 
-      .sidebar-footer {
-        padding: 14px 20px;
-        border-top: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .status-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--green);
-        box-shadow: 0 0 8px rgba(52,211,153,0.5);
-      }
-
-      .sidebar-footer span {
-        font-size: 12px;
-        color: var(--text-tertiary);
-      }
-
-      /* ======= MAIN ======= */
-      .main {
-        margin-left: var(--sidebar-w);
-        flex: 1;
-        min-height: 100vh;
-        background: var(--bg-base);
-      }
-
+      /* MAIN */
+      .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
       .page { display: none; }
       .page.active { display: block; }
-
-      .page-header {
-        padding: 28px 36px 0;
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .page-header h1 {
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-      }
-
-      .page-header p {
-        font-size: 13px;
-        color: var(--text-tertiary);
-      }
-
-      .page-body { padding: 24px 36px 64px; }
-
-      /* ======= STAT CARDS ======= */
-      .stats-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 14px;
-        margin-bottom: 28px;
-      }
-
-      .stat-card {
-        padding: 18px 20px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        transition: var(--transition);
-      }
-
-      .stat-card:hover {
-        border-color: var(--border-hover);
-        background: var(--bg-card-hover);
-      }
-
-      .stat-card .stat-label {
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-tertiary);
-        margin-bottom: 8px;
-      }
-
-      .stat-card .stat-value {
-        font-size: 32px;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        line-height: 1;
-      }
-
-      .stat-card .stat-sub {
-        font-size: 12px;
-        color: var(--text-tertiary);
-        margin-top: 6px;
-      }
-
-      .stat-green .stat-value { color: var(--green); }
-      .stat-blue  .stat-value { color: var(--blue); }
-      .stat-orange .stat-value { color: var(--orange); }
-      .stat-purple .stat-value { color: var(--purple); }
-
-      /* ======= ACTIVITY FEED (Dashboard) ======= */
-      .activity-section h2 {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 14px;
-      }
-
-      .activity-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .activity-item {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 12px 16px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        transition: var(--transition);
-      }
-
-      .activity-item:hover { border-color: var(--border-hover); }
-
-      .activity-thumb {
-        width: 56px;
-        height: 40px;
-        border-radius: var(--radius-xs);
-        object-fit: cover;
-        background: var(--bg-elevated);
-        flex-shrink: 0;
-      }
-
-      .activity-info { flex: 1; min-width: 0; }
-
-      .activity-title {
-        font-size: 13px;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .activity-meta {
-        font-size: 11px;
-        color: var(--text-tertiary);
-        margin-top: 2px;
-      }
-
-      .activity-pill {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 3px 9px;
-        border-radius: 999px;
-        flex-shrink: 0;
-      }
-
-      .pill-people   { background: var(--green-bg); color: var(--green); }
-      .pill-vehicles { background: var(--blue-bg); color: var(--blue); }
-      .pill-animals  { background: var(--orange-bg); color: var(--orange); }
-
-      /* ======= DROP ZONE ======= */
-      .drop-zone {
-        position: relative;
-        max-width: 640px;
-        padding: 48px 32px;
-        border: 1.5px dashed rgba(255,255,255,0.1);
-        border-radius: var(--radius);
-        background: var(--bg-surface);
-        cursor: pointer;
-        transition: var(--transition);
-        text-align: center;
-      }
-
-      .drop-zone:hover, .drop-zone.drag-over {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-        box-shadow: 0 0 0 1px var(--accent), 0 0 40px var(--accent-glow);
-      }
-
-      .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-
-      .drop-icon {
-        width: 52px; height: 52px;
-        margin: 0 auto 18px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 13px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid var(--border);
-      }
-
-      .drop-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
-      .drop-zone p { font-size: 13px; color: var(--text-tertiary); }
-      .browse-link { color: var(--accent); }
-
-      /* Video preview */
-      .video-preview {
-        display: none;
-        max-width: 640px;
-        margin-top: 16px;
-        border-radius: var(--radius);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        background: var(--bg-card);
-      }
-
-      .video-preview.active { display: block; }
-
-      .video-preview video {
-        display: block;
-        width: 100%;
-        max-height: 320px;
-        background: #000;
-      }
-
-      .video-preview-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 16px;
-      }
-
-      .video-preview-name {
-        font-size: 13px;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .btn-analyse {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #fff;
-        background: var(--accent);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        transition: var(--transition);
-      }
-
-      .btn-analyse:hover { background: var(--accent-hover); box-shadow: 0 4px 16px var(--accent-glow); }
-      .btn-analyse:disabled { opacity: 0.4; cursor: not-allowed; }
-
-      /* Tuning panel */
-      .tuning-panel {
-        max-width: 640px;
-        margin-top: 16px;
-        padding: 18px 22px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-      }
-
-      .tuning-title {
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-tertiary);
-        margin-bottom: 14px;
-      }
-
-      .tuning-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 10px;
-      }
-
-      .tuning-row:last-child { margin-bottom: 0; }
-
-      .tuning-toggle { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
-      .tuning-toggle input { opacity: 0; width: 0; height: 0; }
-
-      .toggle-track {
-        position: absolute; inset: 0;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.1);
-        cursor: pointer;
-        transition: var(--transition);
-      }
-
-      .toggle-track::after {
-        content: ''; position: absolute; left: 2px; top: 2px;
-        width: 14px; height: 14px;
-        border-radius: 50%;
-        background: white;
-        transition: var(--transition);
-      }
-
-      .tuning-toggle input:checked + .toggle-track { background: var(--accent); }
-      .tuning-toggle input:checked + .toggle-track::after { left: 18px; }
-
-      .tuning-label { font-size: 13px; font-weight: 500; min-width: 60px; }
-
-      .tuning-slider {
-        flex: 1;
-        -webkit-appearance: none; appearance: none;
-        height: 3px;
-        border-radius: 2px;
-        background: rgba(255,255,255,0.08);
-        outline: none;
-      }
-
-      .tuning-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 14px; height: 14px;
-        border-radius: 50%;
-        background: var(--accent);
-        cursor: pointer;
-        border: 2px solid var(--bg-card);
-      }
-
-      .tuning-value {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-secondary);
-        min-width: 34px;
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-
-      /* Progress */
-      .upload-progress {
-        display: none;
-        max-width: 640px;
-        margin-top: 16px;
-        padding: 18px 22px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-      }
-
-      .upload-progress.active { display: block; }
-
-      .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-      .progress-filename { font-size: 13px; font-weight: 500; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .progress-status { font-size: 12px; color: var(--text-secondary); }
-
-      .progress-bar-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; }
-
-      .progress-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); width: 0%; transition: width 0.3s ease; }
-      .progress-bar-fill.indeterminate { width: 30%; animation: indeterminate 1.2s ease-in-out infinite; }
-
-      @keyframes indeterminate { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
-
-      /* Results */
-      .results-section { display: none; margin-top: 28px; }
-      .results-section.active { display: block; }
-
-      .results-header {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 20px; padding-bottom: 14px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .results-header h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
-      .results-summary { display: flex; gap: 20px; }
-      .summary-stat { text-align: center; }
-      .summary-stat .value { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-      .summary-stat .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 2px; }
-
-      .detected-objects { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-
-      .obj-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 5px 12px; font-size: 13px; font-weight: 500;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      }
-
-      .obj-pill .count { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,0.06); }
-      .cat-pill-people { border-color: var(--green-border); }
-      .cat-pill-vehicles { border-color: var(--blue-border); }
-      .cat-pill-animals { border-color: var(--orange-border); }
-
-      .frames-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 14px;
-      }
-
-      .frame-card {
-        overflow: hidden; border-radius: var(--radius);
-        background: var(--bg-card); border: 1px solid var(--border);
-        transition: var(--transition);
-      }
-
-      .frame-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.25); }
-      .frame-card img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; background: var(--bg-elevated); }
-      .frame-meta { padding: 10px 14px; }
-      .frame-meta .frame-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 5px; }
-      .frame-meta .frame-detections { display: flex; flex-wrap: wrap; gap: 4px; }
-
-      .det-tag { font-size: 11px; padding: 2px 7px; border-radius: var(--radius-xs); font-weight: 500; }
-      .det-tag.people   { background: var(--green-bg); color: var(--green); }
-      .det-tag.vehicles { background: var(--blue-bg); color: var(--blue); }
-      .det-tag.animals  { background: var(--orange-bg); color: var(--orange); }
-
-      .btn-primary {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 9px 18px; font-size: 13px; font-weight: 600;
-        color: #fff; background: var(--accent); border: none;
-        border-radius: 999px; cursor: pointer; transition: var(--transition);
-      }
-
-      .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 16px var(--accent-glow); }
-
-      /* ======= DETECTIONS PAGE ======= */
-      .filter-bar {
-        display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
-      }
-
-      .filter-chip {
-        padding: 6px 14px; font-size: 12px; font-weight: 600;
-        border-radius: 999px; cursor: pointer;
-        background: var(--bg-card); border: 1px solid var(--border);
-        color: var(--text-secondary); transition: var(--transition);
-      }
-
-      .filter-chip:hover { border-color: var(--border-hover); color: var(--text-primary); }
-      .filter-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-
-      .search-box {
-        flex: 0 0 auto; margin-left: auto;
-        padding: 6px 14px; font-size: 12px;
-        background: var(--bg-input); border: 1px solid var(--border);
-        border-radius: 999px; color: var(--text-primary);
-        outline: none; min-width: 200px; transition: var(--transition);
-      }
-
-      .search-box:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-      .search-box::placeholder { color: var(--text-tertiary); }
-
-      .detections-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 14px;
-      }
-
-      .event-card {
-        overflow: hidden; border-radius: var(--radius);
-        background: var(--bg-card); border: 1px solid var(--border);
-        transition: var(--transition);
-      }
-
-      .event-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.25); }
-      .event-card.hidden { display: none; }
-      .event-card img { display: block; width: 100%; height: 160px; object-fit: cover; background: var(--bg-elevated); }
-
-      .event-body { padding: 12px 14px; }
-      .event-body h3 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-      .event-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
-      .event-row .key { color: var(--text-tertiary); }
-      .event-row .val { color: var(--text-secondary); font-weight: 500; }
-
-      .event-pill {
-        display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600;
-        border-radius: 999px; background: var(--green-bg); color: var(--green);
-      }
-
-      .event-timestamp { font-size: 10px; color: var(--text-tertiary); margin-top: 6px; }
-
-      .empty-state {
-        text-align: center; padding: 64px 24px;
-        color: var(--text-tertiary); font-size: 14px;
-      }
-
-      .empty-state svg { margin-bottom: 12px; opacity: 0.25; }
-
-      /* ======= SETTINGS PAGE ======= */
-      .settings-group { max-width: 580px; margin-bottom: 28px; }
-
-      .settings-group-title {
-        font-size: 11px; font-weight: 600; text-transform: uppercase;
-        letter-spacing: 0.06em; color: var(--text-tertiary);
-        margin-bottom: 12px; padding-bottom: 8px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .setting-row {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 12px 0; border-bottom: 1px solid var(--border);
-      }
-
-      .setting-row:last-child { border-bottom: none; }
-      .setting-info { flex: 1; }
-      .setting-name { font-size: 13px; font-weight: 500; margin-bottom: 1px; }
-      .setting-desc { font-size: 11px; color: var(--text-tertiary); }
-
-      .setting-control { display: flex; align-items: center; gap: 10px; min-width: 180px; justify-content: flex-end; }
-
-      .setting-slider {
-        width: 110px; -webkit-appearance: none; appearance: none;
-        height: 3px; border-radius: 2px; background: rgba(255,255,255,0.08); outline: none;
-      }
-
-      .setting-slider::-webkit-slider-thumb {
-        -webkit-appearance: none; width: 14px; height: 14px;
-        border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg-card);
-      }
-
-      .setting-value { font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
-
-      .setting-toggle { position: relative; width: 38px; height: 20px; }
-      .setting-toggle input { opacity: 0; width: 0; height: 0; }
-
-      .setting-toggle .toggle-track {
-        position: absolute; inset: 0; border-radius: 999px;
-        background: rgba(255,255,255,0.1); cursor: pointer; transition: var(--transition);
-      }
-
-      .setting-toggle .toggle-track::after {
-        content: ''; position: absolute; left: 2px; top: 2px;
-        width: 16px; height: 16px; border-radius: 50%;
-        background: white; transition: var(--transition);
-      }
-
-      .setting-toggle input:checked + .toggle-track { background: var(--accent); }
-      .setting-toggle input:checked + .toggle-track::after { left: 20px; }
-
-      .settings-saved {
-        display: none; align-items: center; gap: 6px;
-        font-size: 12px; color: var(--green); margin-top: 6px;
-      }
-
-      .settings-saved.show { display: inline-flex; }
-
-      /* ======= FIND ANYTHING PAGE ======= */
-      .search-panel {
-        max-width: 720px;
-        margin-bottom: 24px;
-      }
-
-      .search-row { margin-bottom: 12px; }
-
-      .search-main {
-        width: 100%;
-        padding: 12px 18px;
-        font-size: 15px;
-        border-radius: var(--radius);
-      }
-
-      .search-filters {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .search-conf-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-left: auto;
-      }
-
-      .search-results-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--border);
-        font-size: 13px;
-        color: var(--text-secondary);
-      }
-
-      .btn-cleanup {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--red);
-        background: var(--red-bg);
-        border: 1px solid rgba(248,113,113,0.2);
-        border-radius: 999px;
-        cursor: pointer;
-        transition: var(--transition);
-      }
-
-      .btn-cleanup:hover { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); }
-
-      .search-results-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 14px;
-      }
-
-      /* ======= CAMERAS PAGE ======= */
-      .add-camera-form {
-        max-width: 560px;
-        display: flex;
-        gap: 8px;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-      }
-
-      .form-input {
-        flex: 1;
-        min-width: 160px;
-        padding: 9px 14px;
-        font-size: 13px;
-        background: var(--bg-input);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        outline: none;
-        transition: var(--transition);
-      }
-
+      .page-header { padding: 24px 32px 0; display: flex; align-items: flex-end; justify-content: space-between; }
+      .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+      .page-header .subtitle { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+      .page-body { padding: 20px 32px 48px; }
+
+      /* STAT CARDS */
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+      .stat-card { padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); transition: var(--transition); }
+      .stat-card:hover { border-color: var(--border-hover); }
+      .stat-card .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+      .stat-card .stat-icon.green { background: var(--green-bg); color: var(--green); }
+      .stat-card .stat-icon.blue { background: var(--blue-bg); color: var(--blue); }
+      .stat-card .stat-icon.orange { background: var(--orange-bg); color: var(--orange); }
+      .stat-card .stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
+      .stat-card .stat-icon.cyan { background: var(--cyan-bg); color: var(--cyan); }
+      .stat-card .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+      .stat-card .stat-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+      .stat-card .stat-trend { font-size: 11px; color: var(--green); margin-top: 6px; }
+      .stat-card .stat-trend.down { color: var(--red); }
+
+      /* MODULES GRID */
+      .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 28px; }
+      .module-card { padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; }
+      .module-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+      .module-card .module-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+      .module-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+      .module-card p { font-size: 12px; color: var(--text-tertiary); line-height: 1.4; }
+      .module-card .module-tag { position: absolute; top: 14px; right: 14px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; }
+      .module-tag.active { background: var(--green-bg); color: var(--green); }
+      .module-tag.coming { background: var(--orange-bg); color: var(--orange); }
+
+      /* ANALYTICS */
+      .analytics-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px; }
+      .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+      .chart-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+      .chart-placeholder { height: 180px; border-radius: 8px; background: linear-gradient(135deg, rgba(59,130,246,0.04) 0%, rgba(167,139,250,0.04) 100%); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 12px; }
+      .heatmap-placeholder { height: 240px; border-radius: 8px; background: linear-gradient(180deg, rgba(248,113,113,0.06) 0%, rgba(251,191,36,0.04) 40%, rgba(52,211,153,0.02) 100%); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 12px; position: relative; overflow: hidden; }
+      .heatmap-placeholder::before { content: ''; position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(circle, rgba(248,113,113,0.15) 0%, rgba(251,191,36,0.08) 40%, transparent 70%); }
+
+      /* COUNTERS */
+      .live-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+      .counter-card { text-align: center; padding: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+      .counter-card .counter-value { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; }
+      .counter-card .counter-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+      .counter-card.live .counter-value { color: var(--green); }
+      .counter-card.alert .counter-value { color: var(--red); }
+
+      /* ZONES */
+      .zones-container { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+      .zone-canvas-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+      .zone-canvas { width: 100%; aspect-ratio: 16/9; background: var(--bg-elevated); border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 13px; }
+      .zone-list { display: flex; flex-direction: column; gap: 8px; }
+      .zone-item { padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+      .zone-item h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+      .zone-item p { font-size: 11px; color: var(--text-tertiary); }
+      .zone-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+      /* GENERIC COMPONENTS */
+      .form-input { padding: 9px 14px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); outline: none; transition: var(--transition); }
       .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
       .form-input::placeholder { color: var(--text-tertiary); }
+      .form-select { padding: 9px 14px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); outline: none; }
+      .btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent); border: none; border-radius: 999px; cursor: pointer; transition: var(--transition); }
+      .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 16px var(--accent-glow); }
+      .btn-secondary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; cursor: pointer; transition: var(--transition); }
+      .btn-secondary:hover { border-color: var(--border-hover); color: var(--text-primary); }
 
-      .form-select {
-        padding: 9px 14px;
-        font-size: 13px;
-        background: var(--bg-input);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        outline: none;
-        cursor: pointer;
-      }
+      /* DROP ZONE */
+      .drop-zone { position: relative; max-width: 600px; padding: 44px 28px; border: 1.5px dashed rgba(255,255,255,0.08); border-radius: var(--radius); background: var(--bg-surface); cursor: pointer; transition: var(--transition); text-align: center; }
+      .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 0 30px var(--accent-glow); }
+      .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      .drop-zone h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+      .drop-zone p { font-size: 12px; color: var(--text-tertiary); }
 
-      .btn-add {
-        padding: 9px 18px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #fff;
-        background: var(--accent);
-        border: none;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        transition: var(--transition);
-        white-space: nowrap;
-      }
+      /* RESULTS GRID */
+      .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 20px; }
+      .result-card { overflow: hidden; border-radius: var(--radius); background: var(--bg-card); border: 1px solid var(--border); transition: var(--transition); }
+      .result-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+      .result-card img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; background: var(--bg-elevated); }
+      .result-card .card-body { padding: 10px 12px; }
+      .result-card .card-body h4 { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+      .result-card .card-body p { font-size: 11px; color: var(--text-tertiary); }
+      .det-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-right: 3px; margin-top: 3px; }
+      .det-tag.people { background: var(--green-bg); color: var(--green); }
+      .det-tag.vehicles { background: var(--blue-bg); color: var(--blue); }
+      .det-tag.animals { background: var(--orange-bg); color: var(--orange); }
 
-      .btn-add:hover { background: var(--accent-hover); }
+      /* EMPTY STATE */
+      .empty-state { text-align: center; padding: 48px 24px; color: var(--text-tertiary); }
+      .empty-state svg { margin-bottom: 10px; opacity: 0.2; }
+      .empty-state p { font-size: 13px; }
 
-      .cameras-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-        gap: 16px;
-      }
-
-      .camera-card {
-        border-radius: var(--radius);
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        overflow: hidden;
-        transition: var(--transition);
-      }
-
-      .camera-card:hover { border-color: var(--border-hover); }
-
-      .camera-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .camera-card-header h3 {
-        font-size: 14px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .camera-type-badge {
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: 2px 8px;
-        border-radius: 999px;
-      }
-
-      .badge-unifi { background: var(--blue-bg); color: var(--blue); }
-      .badge-rtsp  { background: var(--green-bg); color: var(--green); }
-
-      .btn-remove {
-        padding: 4px 10px;
-        font-size: 11px;
-        color: var(--text-tertiary);
-        background: none;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xs);
-        cursor: pointer;
-        transition: var(--transition);
-      }
-
-      .btn-remove:hover { color: var(--red); border-color: rgba(248,113,113,0.3); background: var(--red-bg); }
-
-      .camera-embed {
-        width: 100%;
-        aspect-ratio: 16/9;
-        border: none;
-        display: block;
-        background: var(--bg-elevated);
-      }
-
-      .camera-rtsp-info {
-        padding: 32px 16px;
-        text-align: center;
-        color: var(--text-tertiary);
-        font-size: 13px;
-      }
-
-      .camera-rtsp-info code {
-        display: block;
-        margin-top: 8px;
-        padding: 8px 14px;
-        background: var(--bg-elevated);
-        border-radius: var(--radius-xs);
-        font-size: 12px;
-        color: var(--text-secondary);
-        word-break: break-all;
-      }
-
-      .camera-overlay-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0,0,0,0.6);
-        backdrop-filter: blur(8px);
-        border-radius: 8px;
-        color: white;
-        text-decoration: none;
-        opacity: 0;
-        transition: var(--transition);
-        z-index: 10;
-      }
-
-      .camera-card:hover .camera-overlay-btn { opacity: 1; }
-      .camera-overlay-btn:hover { background: var(--accent); }
-
-      .camera-card-footer {
-        padding: 10px 16px;
-        border-top: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-      }
-
-      .camera-live-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--accent);
-        text-decoration: none;
-        transition: var(--transition);
-      }
-
-      .camera-live-link:hover { color: var(--accent-hover); }
-
-      .live-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--red);
-        box-shadow: 0 0 6px var(--red);
-        animation: pulse-live 2s ease-in-out infinite;
-      }
-
-      @keyframes pulse-live {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-      }
-
-      .camera-empty {
-        text-align: center;
-        padding: 64px 24px;
-        color: var(--text-tertiary);
-      }
-
-      .camera-empty svg { margin-bottom: 12px; opacity: 0.25; }
-      .camera-empty p { font-size: 14px; margin-bottom: 4px; }
-      .camera-empty .hint { font-size: 12px; }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        .sidebar { width: 56px; }
-        .sidebar-brand span, .nav-item span, .nav-badge, .sidebar-section-label { display: none; }
-        .nav-item { justify-content: center; padding: 10px; }
-        .sidebar-brand { justify-content: center; padding: 16px 0; }
-        .main { margin-left: 56px; }
-        .page-header, .page-body { padding-left: 16px; padding-right: 16px; }
-      }
+      /* RESPONSIVE */
+      @media (max-width: 900px) { .analytics-row { grid-template-columns: 1fr; } .zones-container { grid-template-columns: 1fr; } }
+      @media (max-width: 768px) { .sidebar { width: 56px; } .sidebar-brand span, .nav-item span, .nav-badge, .nav-tag, .nav-section-label, .sidebar-footer .plan-info, .badge-pro { display: none; } .nav-item { justify-content: center; padding: 9px; } .sidebar-brand { justify-content: center; } .main { margin-left: 56px; } .page-header, .page-body { padding-left: 16px; padding-right: 16px; } }
     </style>
   </head>
   <body>
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <img src="/static/vigil_logo.png" alt="Vigil">
         <span>Vigil</span>
+        <span class="badge-pro">PRO</span>
       </div>
 
-      <div class="sidebar-section-label">Monitor</div>
-      <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Overview</div>
         <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span>Dashboard</span>
         </div>
-        <div class="nav-item" onclick="showPage('cameras')" data-page="cameras">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Cameras</span>
+        <div class="nav-item" onclick="showPage('analytics')" data-page="analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Analytics</span>
+          <span class="nav-tag new">New</span>
         </div>
-        <div class="nav-item" onclick="showPage('analyse')" data-page="analyse">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          <span>Analyse</span>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Monitor</div>
+        <div class="nav-item" onclick="showPage('cameras')" data-page="cameras">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Cameras</span>
+          <span class="nav-badge green">{{ cameras|length }}</span>
+        </div>
+        <div class="nav-item" onclick="showPage('zones')" data-page="zones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+          <span>Zones</span>
+          <span class="nav-tag beta">Beta</span>
         </div>
         <div class="nav-item" onclick="showPage('detections')" data-page="detections">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           <span>Detections</span>
-          <span class="nav-badge" id="detBadge">{{ events|length }}</span>
+          <span class="nav-badge">{{ events|length }}</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Tools</div>
+        <div class="nav-item" onclick="showPage('analyse')" data-page="analyse">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          <span>Analyse</span>
         </div>
         <div class="nav-item" onclick="showPage('search')" data-page="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <span>Find Anything</span>
         </div>
-      </nav>
+      </div>
 
-      <div class="sidebar-section-label">System</div>
-      <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">System</div>
         <div class="nav-item" onclick="showPage('settings')" data-page="settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span>Settings</span>
         </div>
-      </nav>
+      </div>
 
       <div class="sidebar-footer">
-        <span class="status-dot"></span>
-        <span>System Online</span>
+        <div class="plan-info"><span class="plan-name">Pro Plan</span> &middot; Unlimited cameras</div>
+        <div class="status-row"><span class="status-dot"></span> <span>System Online &middot; YOLO11m</span></div>
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <div class="main">
-
-      <!-- ===== DASHBOARD ===== -->
+      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
-        <div class="page-header"><div><h1>Dashboard</h1><p>System overview and recent activity</p></div></div>
+        <div class="page-header"><div><h1>Dashboard</h1><div class="subtitle">Real-time overview of all connected systems</div></div></div>
         <div class="page-body">
-          <div class="stats-row" id="dashStats">
-            <div class="stat-card">
-              <div class="stat-label">Total Events</div>
-              <div class="stat-value" id="dsTotalEvents">{{ events|length }}</div>
-              <div class="stat-sub">All time</div>
-            </div>
-            <div class="stat-card stat-green">
-              <div class="stat-label">People</div>
-              <div class="stat-value" id="dsPeople">0</div>
-              <div class="stat-sub">Detections</div>
-            </div>
-            <div class="stat-card stat-blue">
-              <div class="stat-label">Vehicles</div>
-              <div class="stat-value" id="dsVehicles">0</div>
-              <div class="stat-sub">Detections</div>
-            </div>
-            <div class="stat-card stat-orange">
-              <div class="stat-label">Animals</div>
-              <div class="stat-value" id="dsAnimals">0</div>
-              <div class="stat-sub">Detections</div>
-            </div>
-            <div class="stat-card stat-purple">
-              <div class="stat-label">Avg Confidence</div>
-              <div class="stat-value" id="dsConfidence">—</div>
-              <div class="stat-sub">Across all events</div>
-            </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="stat-value" id="dsPeople">0</div><div class="stat-label">People Today</div><div class="stat-trend">↑ Live counting</div></div>
+            <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><div class="stat-value" id="dsCameras">{{ cameras|length }}</div><div class="stat-label">Active Cameras</div><div class="stat-trend">All online</div></div>
+            <div class="stat-card"><div class="stat-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="stat-value" id="dsAlerts">0</div><div class="stat-label">Alerts Today</div></div>
+            <div class="stat-card"><div class="stat-icon purple"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="stat-value" id="dsEvents">{{ events|length }}</div><div class="stat-label">Total Events</div></div>
+            <div class="stat-card"><div class="stat-icon cyan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="stat-value">24/7</div><div class="stat-label">Uptime</div><div class="stat-trend">Edge processing</div></div>
           </div>
 
-          <div class="activity-section">
-            <h2>Recent Activity</h2>
-            {% if events %}
-            <div class="activity-list">
-              {% for event in events[:12] %}
-              <div class="activity-item">
-                <img class="activity-thumb" src="/snapshots/{{ event.snapshot_filename }}" alt="" loading="lazy">
-                <div class="activity-info">
-                  <div class="activity-title">Event #{{ event.id }} &middot; {{ event.camera_name }}</div>
-                  <div class="activity-meta">{{ event.timestamp }}</div>
-                </div>
-                <span class="activity-pill pill-people">{{ event.event_type }}</span>
-              </div>
-              {% endfor %}
+          <h2 style="font-size:16px; font-weight:600; margin-bottom:14px;">Modules</h2>
+          <div class="modules-grid">
+            <div class="module-card" onclick="showPage('detections')">
+              <div class="module-icon" style="background:var(--green-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <span class="module-tag active">Active</span>
+              <h3>Security &amp; Intrusion</h3>
+              <p>Person detection, vehicle alerts, perimeter monitoring</p>
             </div>
-            {% else %}
-            <div class="empty-state">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              <p>No activity yet. Analyse a video or connect a camera to get started.</p>
+            <div class="module-card" onclick="showPage('analytics')">
+              <div class="module-icon" style="background:var(--blue-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <span class="module-tag active">Active</span>
+              <h3>Retail Analytics</h3>
+              <p>People counting, heatmaps, dwell time, queue detection</p>
             </div>
-            {% endif %}
+            <div class="module-card" onclick="showPage('zones')">
+              <div class="module-icon" style="background:var(--orange-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="23 7 16 12 23 17"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
+              <span class="module-tag active">Active</span>
+              <h3>Warehouse &amp; Fleet</h3>
+              <p>Forklift speed, vehicle tracking, PPE compliance, zone violations</p>
+            </div>
+            <div class="module-card">
+              <div class="module-icon" style="background:var(--purple-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <span class="module-tag coming">Coming Soon</span>
+              <h3>License Plate Recognition</h3>
+              <p>ANPR, vehicle logging, access control integration</p>
+            </div>
+            <div class="module-card">
+              <div class="module-icon" style="background:var(--cyan-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+              <span class="module-tag coming">Coming Soon</span>
+              <h3>PPE &amp; Safety</h3>
+              <p>Hardhat, hi-vis, gloves detection for construction and manufacturing</p>
+            </div>
+            <div class="module-card">
+              <div class="module-icon" style="background:var(--red-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+              <span class="module-tag coming">Coming Soon</span>
+              <h3>Anomaly Detection</h3>
+              <p>Loitering, crowd formation, unusual activity patterns</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ===== CAMERAS ===== -->
-      <div class="page" id="page-cameras">
-        <div class="page-header"><div><h1>Cameras</h1><p>Manage live camera feeds — UniFi Protect, RTSP, and more</p></div></div>
+      <!-- ANALYTICS -->
+      <div class="page" id="page-analytics">
+        <div class="page-header"><div><h1>Analytics</h1><div class="subtitle">People counting, heatmaps, and traffic flow</div></div><button class="btn-secondary">Export Report</button></div>
         <div class="page-body">
-          <div class="add-camera-form">
-            <input class="form-input" id="camName" type="text" placeholder="Camera name">
-            <input class="form-input" id="camUrl" type="text" placeholder="URL (UniFi shared link or RTSP)" style="flex:2">
-            <select class="form-select" id="camType">
-              <option value="unifi">UniFi Protect</option>
-              <option value="rtsp">RTSP Stream</option>
-            </select>
-            <button class="btn-add" onclick="addCamera()">Add Camera</button>
+          <div class="live-counters">
+            <div class="counter-card live"><div class="counter-value" id="liveCount">0</div><div class="counter-label">People Now</div></div>
+            <div class="counter-card"><div class="counter-value" id="todayCount">0</div><div class="counter-label">Today Total</div></div>
+            <div class="counter-card"><div class="counter-value" id="avgDwell">—</div><div class="counter-label">Avg Dwell Time</div></div>
+            <div class="counter-card"><div class="counter-value" id="peakHour">—</div><div class="counter-label">Peak Hour</div></div>
+            <div class="counter-card alert"><div class="counter-value" id="speedAlerts">0</div><div class="counter-label">Speed Violations</div></div>
+          </div>
+          <div class="analytics-row">
+            <div class="chart-card">
+              <h3>Footfall Over Time</h3>
+              <div class="chart-placeholder">
+                <svg width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none">
+                  <polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,140 30,120 60,100 90,80 120,90 150,60 180,70 210,40 240,50 270,30 300,45 330,35 360,20 400,25" opacity="0.6"/>
+                  <polyline fill="none" stroke="var(--green)" stroke-width="2" points="0,150 30,145 60,130 90,120 120,125 150,110 180,115 210,100 240,105 270,95 300,100 330,90 360,85 400,80" opacity="0.4"/>
+                </svg>
+              </div>
+            </div>
+            <div class="chart-card">
+              <h3>Heatmap</h3>
+              <div class="heatmap-placeholder">Connect a camera to generate heatmaps</div>
+            </div>
+          </div>
+          <div class="analytics-row">
+            <div class="chart-card">
+              <h3>Vehicle Activity</h3>
+              <div class="chart-placeholder">
+                <svg width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none">
+                  <rect x="20" y="100" width="30" height="50" fill="var(--blue)" opacity="0.3" rx="3"/>
+                  <rect x="60" y="80" width="30" height="70" fill="var(--blue)" opacity="0.4" rx="3"/>
+                  <rect x="100" y="60" width="30" height="90" fill="var(--blue)" opacity="0.5" rx="3"/>
+                  <rect x="140" y="90" width="30" height="60" fill="var(--blue)" opacity="0.35" rx="3"/>
+                  <rect x="180" y="70" width="30" height="80" fill="var(--blue)" opacity="0.45" rx="3"/>
+                  <rect x="220" y="40" width="30" height="110" fill="var(--blue)" opacity="0.6" rx="3"/>
+                  <rect x="260" y="55" width="30" height="95" fill="var(--blue)" opacity="0.5" rx="3"/>
+                  <rect x="300" y="75" width="30" height="75" fill="var(--blue)" opacity="0.4" rx="3"/>
+                  <rect x="340" y="110" width="30" height="40" fill="var(--blue)" opacity="0.3" rx="3"/>
+                </svg>
+              </div>
+            </div>
+            <div class="chart-card">
+              <h3>Detection Breakdown</h3>
+              <div style="padding:20px 0">
+                <div style="display:flex; justify-content:center; gap:20px;">
+                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--green)" id="anPeople">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">People</div></div>
+                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--blue)" id="anVehicles">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">Vehicles</div></div>
+                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--orange)" id="anAnimals">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">Animals</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAMERAS -->
+      <div class="page" id="page-cameras">
+        <div class="page-header"><div><h1>Cameras</h1><div class="subtitle">Manage live feeds — UniFi Protect, RTSP, and more</div></div></div>
+        <div class="page-body">
+          <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; max-width:640px;">
+            <input class="form-input" id="camName" type="text" placeholder="Camera name" style="flex:1; min-width:140px">
+            <input class="form-input" id="camUrl" type="text" placeholder="URL (UniFi link or RTSP)" style="flex:2; min-width:200px">
+            <select class="form-select" id="camType"><option value="unifi">UniFi Protect</option><option value="rtsp">RTSP</option></select>
+            <button class="btn-primary" onclick="addCamera()">Add</button>
           </div>
           <div id="camerasContainer"></div>
         </div>
       </div>
 
-      <!-- ===== ANALYSE ===== -->
-      <div class="page" id="page-analyse">
-        <div class="page-header"><div><h1>Analyse</h1><p>Upload video to detect people, vehicles, and animals</p></div></div>
+      <!-- ZONES -->
+      <div class="page" id="page-zones">
+        <div class="page-header"><div><h1>Zones</h1><div class="subtitle">Define regions for speed limits, counting lines, and restricted areas</div></div><button class="btn-primary">+ New Zone</button></div>
         <div class="page-body">
-          <div class="drop-zone" id="dropZone">
-            <input type="file" id="fileInput" accept="video/*">
-            <div class="drop-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <div class="zones-container">
+            <div class="zone-canvas-wrap">
+              <div class="zone-canvas">Select a camera and draw zones on the preview</div>
             </div>
-            <h3>Drop video here</h3>
-            <p>or <span class="browse-link">browse files</span>&ensp;&middot;&ensp;MP4, MOV, AVI</p>
-          </div>
-
-          <div class="video-preview" id="videoPreview">
-            <video id="previewPlayer" muted></video>
-            <div class="video-preview-bar">
-              <span class="video-preview-name" id="previewName"></span>
-              <button class="btn-analyse" id="btnAnalyse" onclick="startAnalysis()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Analyse
-              </button>
-            </div>
-          </div>
-
-          <div class="tuning-panel">
-            <div class="tuning-title">Detection Sensitivity</div>
-            <div class="tuning-row">
-              <label class="tuning-toggle"><input type="checkbox" id="tunePeopleOn" checked><span class="toggle-track"></span></label>
-              <span class="tuning-label">People</span>
-              <input type="range" class="tuning-slider" id="tunePeople" min="10" max="90" value="45" oninput="document.getElementById('tunePeopleVal').textContent=this.value+'%'">
-              <span class="tuning-value" id="tunePeopleVal">45%</span>
-            </div>
-            <div class="tuning-row">
-              <label class="tuning-toggle"><input type="checkbox" id="tuneVehiclesOn" checked><span class="toggle-track"></span></label>
-              <span class="tuning-label">Vehicles</span>
-              <input type="range" class="tuning-slider" id="tuneVehicles" min="10" max="90" value="30" oninput="document.getElementById('tuneVehiclesVal').textContent=this.value+'%'">
-              <span class="tuning-value" id="tuneVehiclesVal">30%</span>
-            </div>
-            <div class="tuning-row">
-              <label class="tuning-toggle"><input type="checkbox" id="tuneAnimalsOn" checked><span class="toggle-track"></span></label>
-              <span class="tuning-label">Animals</span>
-              <input type="range" class="tuning-slider" id="tuneAnimals" min="10" max="90" value="25" oninput="document.getElementById('tuneAnimalsVal').textContent=this.value+'%'">
-              <span class="tuning-value" id="tuneAnimalsVal">25%</span>
-            </div>
-          </div>
-
-          <div class="upload-progress" id="uploadProgress">
-            <div class="progress-header">
-              <span class="progress-filename" id="progressFilename"></span>
-              <span class="progress-status" id="progressStatus">Uploading…</span>
-            </div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" id="progressBar"></div></div>
-          </div>
-
-          <div class="results-section" id="resultsSection">
-            <div class="results-header">
-              <h2>Results</h2>
-              <div class="results-summary" id="resultsSummary"></div>
-            </div>
-            <div class="detected-objects" id="detectedObjects"></div>
-            <div class="frames-grid" id="framesGrid"></div>
-            <div style="text-align:center; margin-top:32px;">
-              <button class="btn-primary" onclick="resetUpload()">Analyse Another</button>
+            <div class="zone-list">
+              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--red)"></span> Loading Bay</h4><p>Speed limit: 5 mph &middot; Alert on violation</p></div>
+              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--green)"></span> Main Entrance</h4><p>People counting &middot; In/Out tracking</p></div>
+              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--orange)"></span> Aisle 3</h4><p>Dwell time monitoring &middot; Heatmap</p></div>
+              <div class="zone-item"><h4><span class="zone-dot" style="background:var(--purple)"></span> Restricted Area</h4><p>Intrusion detection &middot; Alert on entry</p></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ===== DETECTIONS ===== -->
+      <!-- DETECTIONS -->
       <div class="page" id="page-detections">
-        <div class="page-header"><div><h1>Detections</h1><p>Event log from camera feeds and analysis</p></div></div>
+        <div class="page-header"><div><h1>Detections</h1><div class="subtitle">Real-time event stream from all cameras</div></div></div>
         <div class="page-body">
           {% if events %}
-          <div class="filter-bar">
-            <span class="filter-chip active" onclick="filterEvents('all', this)">All</span>
-            <span class="filter-chip" onclick="filterEvents('person', this)">People</span>
-            <span class="filter-chip" onclick="filterEvents('vehicle', this)">Vehicles</span>
-            <span class="filter-chip" onclick="filterEvents('animal', this)">Animals</span>
-            <input class="search-box" type="text" placeholder="Search events…" oninput="searchEvents(this.value)">
-          </div>
-          <div class="detections-grid" id="detectionsGrid">
-            {% for event in events %}
-            <article class="event-card" data-labels="{{ event.labels_detected | join(',') }}" data-type="{{ event.event_type }}" data-camera="{{ event.camera_name }}">
-              <a href="/snapshots/{{ event.snapshot_filename }}"><img src="/snapshots/{{ event.snapshot_filename }}" alt="Event {{ event.id }}" loading="lazy"></a>
-              <div class="event-body">
-                <h3>Event #{{ event.id }}</h3>
-                <div class="event-row"><span class="key">Type</span><span class="event-pill">{{ event.event_type }}</span></div>
-                <div class="event-row"><span class="key">Camera</span><span class="val">{{ event.camera_name }}</span></div>
-                <div class="event-row"><span class="key">Confidence</span><span class="val">{{ "%.0f%%"|format(event.confidence * 100) }}</span></div>
-                <div class="event-row"><span class="key">Labels</span><span class="val">{{ event.labels_detected | join(", ") }}</span></div>
-                <p class="event-timestamp">{{ event.timestamp }}</p>
+          <div class="results-grid">
+            {% for event in events[:24] %}
+            <div class="result-card">
+              <a href="/snapshots/{{ event.snapshot_filename }}"><img src="/snapshots/{{ event.snapshot_filename }}" alt="" loading="lazy"></a>
+              <div class="card-body">
+                <h4>{{ event.camera_name }} &middot; #{{ event.id }}</h4>
+                <p>{{ event.timestamp }}</p>
+                <span class="det-tag people">{{ event.event_type }}</span>
+                <span class="det-tag" style="background:var(--bg-elevated); color:var(--text-secondary)">{{ "%.0f%%"|format(event.confidence * 100) }}</span>
               </div>
-            </article>
+            </div>
             {% endfor %}
           </div>
           {% else %}
-          <div class="empty-state">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <p>No detections yet. Analyse a video or connect a camera.</p>
-          </div>
+          <div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><p>No detections yet. Connect a camera or analyse a video.</p></div>
           {% endif %}
         </div>
       </div>
 
-      <!-- ===== FIND ANYTHING ===== -->
-      <div class="page" id="page-search">
-        <div class="page-header"><div><h1>Find Anything</h1><p>Search all detections by type, camera, confidence, or keyword</p></div></div>
+      <!-- ANALYSE -->
+      <div class="page" id="page-analyse">
+        <div class="page-header"><div><h1>Analyse</h1><div class="subtitle">Upload video for instant AI detection</div></div></div>
         <div class="page-body">
-          <div class="search-panel">
-            <div class="search-row">
-              <input class="form-input search-main" id="searchQuery" type="text" placeholder="Search detections… (e.g. dog, person, front-gate)" oninput="debounceSearch()">
-            </div>
-            <div class="search-filters">
-              <select class="form-select" id="searchCamera" onchange="runSearch()">
-                <option value="">All Cameras</option>
-              </select>
-              <select class="form-select" id="searchType" onchange="runSearch()">
-                <option value="">All Types</option>
-                <option value="person_present">Person</option>
-                <option value="animal_present">Animal</option>
-                <option value="vehicle_present">Vehicle</option>
-              </select>
-              <div class="search-conf-row">
-                <span class="tuning-label">Min Confidence</span>
-                <input type="range" class="tuning-slider" id="searchConf" min="0" max="90" value="0" oninput="document.getElementById('searchConfVal').textContent=this.value+'%'; runSearch()">
-                <span class="tuning-value" id="searchConfVal">0%</span>
-              </div>
-            </div>
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept="video/*">
+            <h3>Drop video here</h3>
+            <p>or click to browse &middot; MP4, MOV, AVI</p>
           </div>
-
-          <div class="search-results-header" id="searchResultsHeader" style="display:none">
-            <span id="searchResultCount"></span>
-            <button class="btn-cleanup" onclick="cleanupOldEvents()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14H7L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-              Clean Up Old
-            </button>
-          </div>
-
-          <div class="search-results-grid" id="searchResults"></div>
+          <div id="analyseProgress" style="display:none; margin-top:16px; font-size:13px; color:var(--text-secondary)">Analysing…</div>
+          <div class="results-grid" id="analyseResults"></div>
         </div>
       </div>
 
-      <!-- ===== SETTINGS ===== -->
-      <div class="page" id="page-settings">
-        <div class="page-header"><div><h1>Settings</h1><p>Configure detection thresholds and categories</p></div></div>
+      <!-- FIND ANYTHING -->
+      <div class="page" id="page-search">
+        <div class="page-header"><div><h1>Find Anything</h1><div class="subtitle">Search all detections by type, camera, or keyword</div></div></div>
         <div class="page-body">
-          <div class="settings-group">
-            <div class="settings-group-title">Detection Categories</div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">People Detection</div><div class="setting-desc">Detect persons in video frames</div></div>
-              <div class="setting-control"><label class="setting-toggle"><input type="checkbox" id="settPeopleOn" checked onchange="syncFromSettings()"><span class="toggle-track"></span></label></div>
+          <div style="max-width:600px; margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap">
+            <input class="form-input" id="searchQuery" type="text" placeholder="Search… (e.g. dog, person, truck)" style="flex:2; min-width:200px" oninput="debounceSearch()">
+            <select class="form-select" id="searchCamera" onchange="runSearch()"><option value="">All Cameras</option></select>
+            <select class="form-select" id="searchType" onchange="runSearch()"><option value="">All Types</option><option value="person_present">Person</option><option value="animal_present">Animal</option><option value="vehicle_present">Vehicle</option></select>
+          </div>
+          <div id="searchResultCount" style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px"></div>
+          <div class="results-grid" id="searchResults"></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="page-header"><div><h1>Settings</h1><div class="subtitle">Detection thresholds, model, and account</div></div></div>
+        <div class="page-body">
+          <div style="max-width:520px">
+            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Detection Thresholds</h3>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:28px">
+              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">People</span><input type="range" min="10" max="90" value="45" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">45%</span></div>
+              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">30%</span></div>
+              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">25%</span></div>
             </div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Vehicle Detection</div><div class="setting-desc">Cars, trucks, motorcycles, buses, boats</div></div>
-              <div class="setting-control"><label class="setting-toggle"><input type="checkbox" id="settVehiclesOn" checked onchange="syncFromSettings()"><span class="toggle-track"></span></label></div>
+            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Model</h3>
+            <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:28px; display:flex; justify-content:space-between; align-items:center">
+              <div><div style="font-size:14px; font-weight:600">YOLO11m</div><div style="font-size:11px; color:var(--text-tertiary)">20M parameters &middot; COCO 80 classes &middot; Balanced accuracy + speed</div></div>
+              <span style="font-size:11px; color:var(--green); font-weight:600">Active</span>
             </div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Animal Detection</div><div class="setting-desc">Dogs, cats, birds, horses, bears, and more</div></div>
-              <div class="setting-control"><label class="setting-toggle"><input type="checkbox" id="settAnimalsOn" checked onchange="syncFromSettings()"><span class="toggle-track"></span></label></div>
+            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Storage</h3>
+            <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center">
+              <div><div style="font-size:14px; font-weight:600">Retention</div><div style="font-size:11px; color:var(--text-tertiary)">Keep most recent 1000 events, auto-delete older snapshots</div></div>
+              <button class="btn-secondary" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Now</button>
             </div>
           </div>
-          <div class="settings-group">
-            <div class="settings-group-title">Confidence Thresholds</div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">People</div><div class="setting-desc">Higher = fewer false positives</div></div>
-              <div class="setting-control"><input type="range" class="setting-slider" id="settPeople" min="10" max="90" value="45" oninput="syncFromSettings()"><span class="setting-value" id="settPeopleVal">45%</span></div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Vehicles</div><div class="setting-desc">Confidence threshold for vehicle detections</div></div>
-              <div class="setting-control"><input type="range" class="setting-slider" id="settVehicles" min="10" max="90" value="30" oninput="syncFromSettings()"><span class="setting-value" id="settVehiclesVal">30%</span></div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Animals</div><div class="setting-desc">Confidence threshold for animal detections</div></div>
-              <div class="setting-control"><input type="range" class="setting-slider" id="settAnimals" min="10" max="90" value="25" oninput="syncFromSettings()"><span class="setting-value" id="settAnimalsVal">25%</span></div>
-            </div>
-          </div>
-          <div class="settings-group">
-            <div class="settings-group-title">Model</div>
-            <div class="setting-row">
-              <div class="setting-info"><div class="setting-name">Inference Model</div><div class="setting-desc">YOLOv8m — balanced accuracy and speed (COCO 80 classes)</div></div>
-              <div class="setting-control"><span class="setting-value" style="color:var(--accent)">yolov8m</span></div>
-            </div>
-          </div>
-          <span class="settings-saved" id="settingsSaved"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Settings applied</span>
         </div>
       </div>
     </div>
 
     <script>
-      /* ---- Navigation ---- */
       function showPage(name) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('page-' + name).classList.add('active');
-        document.querySelector('[data-page="' + name + '"]').classList.add('active');
+        const navEl = document.querySelector('[data-page="' + name + '"]');
+        if (navEl) navEl.classList.add('active');
       }
 
-      /* ---- Dashboard stats ---- */
+      // Dashboard stats
       fetch('/stats').then(r=>r.json()).then(d => {
-        document.getElementById('dsTotalEvents').textContent = d.total_events;
-        document.getElementById('dsConfidence').textContent = d.average_confidence > 0 ? (d.average_confidence * 100).toFixed(0) + '%' : '—';
         const lc = d.label_counts || {};
         document.getElementById('dsPeople').textContent = lc.person || 0;
-        const vLabels = ['bicycle','car','motorcycle','airplane','bus','train','truck','boat'];
-        const aLabels = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe'];
-        let vCount = 0, aCount = 0;
-        vLabels.forEach(l => vCount += (lc[l]||0));
-        aLabels.forEach(l => aCount += (lc[l]||0));
-        document.getElementById('dsVehicles').textContent = vCount;
-        document.getElementById('dsAnimals').textContent = aCount;
-      }).catch(() => {});
+        document.getElementById('dsEvents').textContent = d.total_events || 0;
+        document.getElementById('anPeople').textContent = lc.person || 0;
+        const vl = ['bicycle','car','motorcycle','airplane','bus','train','truck','boat'];
+        const al = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe'];
+        let vc=0,ac=0; vl.forEach(l=>vc+=(lc[l]||0)); al.forEach(l=>ac+=(lc[l]||0));
+        document.getElementById('anVehicles').textContent = vc;
+        document.getElementById('anAnimals').textContent = ac;
+        document.getElementById('todayCount').textContent = lc.person || 0;
+      }).catch(()=>{});
 
-      /* ---- Settings sync ---- */
-      const syncPairs = [
-        ['tunePeople','tunePeopleOn','tunePeopleVal','settPeople','settPeopleOn','settPeopleVal'],
-        ['tuneVehicles','tuneVehiclesOn','tuneVehiclesVal','settVehicles','settVehiclesOn','settVehiclesVal'],
-        ['tuneAnimals','tuneAnimalsOn','tuneAnimalsVal','settAnimals','settAnimalsOn','settAnimalsVal'],
-      ];
-
-      function syncFromSettings() {
-        syncPairs.forEach(([ts,to,tv,ss,so,sv]) => {
-          const val = document.getElementById(ss).value;
-          document.getElementById(ts).value = val;
-          document.getElementById(to).checked = document.getElementById(so).checked;
-          document.getElementById(tv).textContent = val + '%';
-          document.getElementById(sv).textContent = val + '%';
-        });
-        flashSaved();
-      }
-
-      let savedTO;
-      function flashSaved() {
-        const el = document.getElementById('settingsSaved');
-        el.classList.add('show');
-        clearTimeout(savedTO);
-        savedTO = setTimeout(() => el.classList.remove('show'), 2000);
-      }
-
-      /* ---- Detections filtering ---- */
-      const personLabels = ['person'];
-      const vehicleLabels = ['bicycle','car','motorcycle','airplane','bus','train','truck','boat'];
-      const animalLabels = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe'];
-
-      function filterEvents(category, chip) {
-        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        document.querySelectorAll('.event-card').forEach(card => {
-          if (category === 'all') { card.classList.remove('hidden'); return; }
-          const labels = (card.dataset.labels || '').split(',');
-          let match = false;
-          if (category === 'person') match = labels.some(l => personLabels.includes(l));
-          if (category === 'vehicle') match = labels.some(l => vehicleLabels.includes(l));
-          if (category === 'animal') match = labels.some(l => animalLabels.includes(l));
-          card.classList.toggle('hidden', !match);
-        });
-      }
-
-      function searchEvents(query) {
-        const q = query.toLowerCase();
-        document.querySelectorAll('.event-card').forEach(card => {
-          const text = card.textContent.toLowerCase();
-          card.classList.toggle('hidden', q && !text.includes(q));
-        });
-      }
-
-      /* ---- Drop zone ---- */
-      const dropZone = document.getElementById('dropZone');
-      const fileInput = document.getElementById('fileInput');
-      let pendingFile = null;
-
-      ['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('drag-over'); }));
-      ['dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('drag-over'); }));
-
-      dropZone.addEventListener('drop', ev => { if (ev.dataTransfer.files[0]) showPreview(ev.dataTransfer.files[0]); });
-      fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
-
-      function showPreview(file) {
-        pendingFile = file;
-        const preview = document.getElementById('videoPreview');
-        const player = document.getElementById('previewPlayer');
-        document.getElementById('previewName').textContent = file.name;
-        player.src = URL.createObjectURL(file);
-        preview.classList.add('active');
-        dropZone.style.display = 'none';
-      }
-
-      function startAnalysis() {
-        if (!pendingFile) return;
-        document.getElementById('btnAnalyse').disabled = true;
-        handleUpload(pendingFile);
-      }
-
-      /* ---- Upload + analyse ---- */
-      const uploadProgress = document.getElementById('uploadProgress');
-      const progressFilename = document.getElementById('progressFilename');
-      const progressStatus = document.getElementById('progressStatus');
-      const progressBar = document.getElementById('progressBar');
-      const resultsSection = document.getElementById('resultsSection');
-
-      function handleUpload(file) {
-        progressFilename.textContent = file.name;
-        uploadProgress.classList.add('active');
-        resultsSection.classList.remove('active');
-        progressBar.style.width = '0%';
-        progressBar.classList.remove('indeterminate');
-        progressStatus.textContent = 'Uploading…';
-
-        const fd = new FormData();
-        fd.append('video', file);
-        fd.append('people_threshold', parseInt(document.getElementById('tunePeople').value)/100);
-        fd.append('vehicles_threshold', parseInt(document.getElementById('tuneVehicles').value)/100);
-        fd.append('animals_threshold', parseInt(document.getElementById('tuneAnimals').value)/100);
-        fd.append('detect_people', document.getElementById('tunePeopleOn').checked);
-        fd.append('detect_vehicles', document.getElementById('tuneVehiclesOn').checked);
-        fd.append('detect_animals', document.getElementById('tuneAnimalsOn').checked);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/analyse');
-        xhr.upload.onprogress = e => { if (e.lengthComputable) progressBar.style.width = Math.round((e.loaded/e.total)*60)+'%'; };
-        xhr.upload.onload = () => { progressBar.style.width = '60%'; progressStatus.textContent = 'Running AI inference…'; progressBar.classList.add('indeterminate'); };
-        xhr.onload = () => {
-          uploadProgress.classList.remove('active');
-          document.getElementById('btnAnalyse').disabled = false;
-          if (xhr.status === 200) showResults(JSON.parse(xhr.responseText));
-          else alert('Analysis failed: ' + xhr.statusText);
-        };
-        xhr.onerror = () => { uploadProgress.classList.remove('active'); document.getElementById('btnAnalyse').disabled = false; alert('Upload failed.'); };
-        xhr.send(fd);
-      }
-
-      function getCat(label) {
-        if (personLabels.includes(label)) return 'people';
-        if (vehicleLabels.includes(label)) return 'vehicles';
-        if (animalLabels.includes(label)) return 'animals';
-        return 'other';
-      }
-
-      function showResults(data) {
-        resultsSection.classList.add('active');
-        const cats = data.category_summary || {};
-        const total = data.frames.reduce((s,f) => s + f.detections.length, 0);
-        document.getElementById('resultsSummary').innerHTML = `
-          <div class="summary-stat"><div class="value">${data.frames_analysed}</div><div class="label">Frames</div></div>
-          <div class="summary-stat"><div class="value">${total}</div><div class="label">Total</div></div>
-          <div class="summary-stat"><div class="value">${cats.people||0}</div><div class="label">People</div></div>
-          <div class="summary-stat"><div class="value">${cats.vehicles||0}</div><div class="label">Vehicles</div></div>
-          <div class="summary-stat"><div class="value">${cats.animals||0}</div><div class="label">Animals</div></div>`;
-
-        const objEl = document.getElementById('detectedObjects');
-        objEl.innerHTML = '';
-        Object.entries(data.object_summary).sort((a,b)=>b[1]-a[1]).forEach(([l,c]) => {
-          objEl.innerHTML += `<span class="obj-pill cat-pill-${getCat(l)}">${l}<span class="count">${c}</span></span>`;
-        });
-
-        const grid = document.getElementById('framesGrid');
-        grid.innerHTML = '';
-        data.frames.forEach(f => {
-          if (!f.detections.length) return;
-          const tags = f.detections.map(d => `<span class="det-tag ${d.category||getCat(d.label)}">${d.label} ${(d.confidence*100).toFixed(0)}%</span>`).join('');
-          grid.innerHTML += `<div class="frame-card"><img src="/analysis-snapshots/${f.snapshot_filename}" alt="Frame ${f.frame_number}" loading="lazy"><div class="frame-meta"><div class="frame-label">Frame ${f.frame_number}</div><div class="frame-detections">${tags}</div></div></div>`;
-        });
-
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-
-      function resetUpload() {
-        resultsSection.classList.remove('active');
-        document.getElementById('videoPreview').classList.remove('active');
-        dropZone.style.display = '';
-        fileInput.value = '';
-        pendingFile = null;
-      }
-
-      /* ---- Find Anything (Search) ---- */
-      let searchTimeout;
-      function debounceSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(runSearch, 300);
-      }
-
-      function runSearch() {
-        const q = document.getElementById('searchQuery').value.trim();
-        const camera = document.getElementById('searchCamera').value;
-        const eventType = document.getElementById('searchType').value;
-        const minConf = parseInt(document.getElementById('searchConf').value) / 100;
-
-        const params = new URLSearchParams();
-        if (q) params.set('q', q);
-        if (camera) params.set('camera', camera);
-        if (eventType) params.set('event_type', eventType);
-        if (minConf > 0) params.set('min_confidence', minConf);
-        params.set('limit', '100');
-
-        fetch('/events/search?' + params.toString())
-          .then(r => r.json())
-          .then(data => {
-            const header = document.getElementById('searchResultsHeader');
-            header.style.display = 'flex';
-            document.getElementById('searchResultCount').textContent = data.count + ' results found';
-
-            const camSelect = document.getElementById('searchCamera');
-            if (camSelect.options.length <= 1 && data.cameras) {
-              data.cameras.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c; opt.textContent = c;
-                camSelect.appendChild(opt);
-              });
-            }
-
-            const grid = document.getElementById('searchResults');
-            if (!data.results.length) {
-              grid.innerHTML = '<div class="empty-state"><p>No results matching your filters</p></div>';
-              return;
-            }
-
-            grid.innerHTML = data.results.map(e => `
-              <div class="event-card">
-                <a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" alt="Event ${e.id}" loading="lazy"></a>
-                <div class="event-body">
-                  <h3>Event #${e.id}</h3>
-                  <div class="event-row"><span class="key">Type</span><span class="event-pill">${e.event_type}</span></div>
-                  <div class="event-row"><span class="key">Camera</span><span class="val">${e.camera_name}</span></div>
-                  <div class="event-row"><span class="key">Confidence</span><span class="val">${(e.confidence*100).toFixed(0)}%</span></div>
-                  <div class="event-row"><span class="key">Labels</span><span class="val">${e.labels_detected.join(', ')}</span></div>
-                  <p class="event-timestamp">${e.timestamp}</p>
-                </div>
-              </div>`).join('');
-          });
-      }
-
-      function cleanupOldEvents() {
-        if (!confirm('Delete old detections? This keeps the most recent 1000 events and removes the rest.')) return;
-        fetch('/events/cleanup?keep=1000', { method: 'POST' })
-          .then(r => r.json())
-          .then(d => {
-            alert('Cleaned up ' + d.deleted + ' old events. ' + d.remaining + ' remaining.');
-            runSearch();
-          });
-      }
-
-      // Load initial search on page show
-      document.querySelector('[data-page="search"]').addEventListener('click', () => setTimeout(runSearch, 100));
-
-      /* ---- Cameras ---- */
+      // Cameras
       function loadCameras() {
-        fetch('/cameras').then(r => r.json()).then(renderCameras).catch(() => {});
+        fetch('/cameras').then(r=>r.json()).then(cams => {
+          const c = document.getElementById('camerasContainer');
+          if (!cams.length) { c.innerHTML = '<div class="empty-state"><p>No cameras added. Add a UniFi Protect link or RTSP URL above.</p></div>'; return; }
+          c.innerHTML = '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:14px">' + cams.map(cam => {
+            const badge = cam.type==='unifi' ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--blue-bg);color:var(--blue)">UniFi</span>' : '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green)">RTSP</span>';
+            const content = cam.type==='unifi' ? `<iframe src="${cam.url}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;background:var(--bg-elevated)" allow="autoplay;fullscreen;encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" loading="lazy"></iframe><div style="padding:8px 0"><a href="${cam.url}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">↗ Open Live Stream</a></div>` : `<div style="padding:24px;text-align:center;color:var(--text-tertiary);font-size:12px"><code style="display:block;margin-top:6px;padding:6px 10px;background:var(--bg-elevated);border-radius:4px;font-size:11px;word-break:break-all">${cam.url}</code></div>`;
+            return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">${badge} ${cam.name}</div><button onclick="removeCamera('${cam.id}')" style="font-size:11px;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-tertiary);cursor:pointer">Remove</button></div><div style="padding:10px">${content}</div></div>`;
+          }).join('') + '</div>';
+        });
       }
-
-      function renderCameras(cameras) {
-        const container = document.getElementById('camerasContainer');
-        if (!cameras.length) {
-          container.innerHTML = `
-            <div class="camera-empty">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <p>No cameras added yet</p>
-              <p class="hint">Add a UniFi Protect shared link or RTSP stream URL above</p>
-            </div>`;
-          return;
-        }
-
-        container.innerHTML = '<div class="cameras-grid">' + cameras.map(cam => {
-          const badgeClass = cam.type === 'unifi' ? 'badge-unifi' : 'badge-rtsp';
-          const badgeText = cam.type === 'unifi' ? 'UniFi' : 'RTSP';
-
-          let content;
-          if (cam.type === 'unifi') {
-            content = `
-              <div style="position:relative">
-                <iframe class="camera-embed" src="${cam.url}" allow="autoplay; fullscreen; encrypted-media; camera; microphone" allowfullscreen referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" loading="lazy"></iframe>
-                <a href="${cam.url}" target="_blank" rel="noopener" class="camera-overlay-btn" title="Open live stream in new tab">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </a>
-              </div>
-              <div class="camera-card-footer">
-                <a href="${cam.url}" target="_blank" rel="noopener" class="camera-live-link">
-                  <span class="live-dot"></span>
-                  Open Live Stream
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </a>
-              </div>`;
-          } else {
-            content = `<div class="camera-rtsp-info">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity:0.3"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-              <p style="margin-top:8px">RTSP stream configured for AI processing</p>
-              <code>${cam.url}</code>
-            </div>`;
-          }
-
-          return `<div class="camera-card">
-            <div class="camera-card-header">
-              <h3><span class="camera-type-badge ${badgeClass}">${badgeText}</span> ${cam.name}</h3>
-              <button class="btn-remove" onclick="removeCamera('${cam.id}')">Remove</button>
-            </div>
-            ${content}
-          </div>`;
-        }).join('') + '</div>';
-      }
-
       function addCamera() {
         const name = document.getElementById('camName').value.trim();
         const url = document.getElementById('camUrl').value.trim();
         const type = document.getElementById('camType').value;
-        if (!name || !url) return;
+        if (!name||!url) return;
+        fetch('/cameras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,url,type})}).then(r=>r.json()).then(()=>{document.getElementById('camName').value='';document.getElementById('camUrl').value='';loadCameras();});
+      }
+      function removeCamera(id) { fetch('/cameras/'+id,{method:'DELETE'}).then(()=>loadCameras()); }
+      loadCameras();
 
-        fetch('/cameras', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, url, type })
-        }).then(r => r.json()).then(() => {
-          document.getElementById('camName').value = '';
-          document.getElementById('camUrl').value = '';
-          loadCameras();
+      // Analyse
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('fileInput');
+      ['dragenter','dragover'].forEach(e=>dropZone.addEventListener(e,ev=>{ev.preventDefault();dropZone.classList.add('drag-over');}));
+      ['dragleave','drop'].forEach(e=>dropZone.addEventListener(e,ev=>{ev.preventDefault();dropZone.classList.remove('drag-over');}));
+      dropZone.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])uploadFile(ev.dataTransfer.files[0]);});
+      fileInput.addEventListener('change',()=>{if(fileInput.files[0])uploadFile(fileInput.files[0]);});
+
+      function uploadFile(file) {
+        document.getElementById('analyseProgress').style.display='block';
+        document.getElementById('analyseResults').innerHTML='';
+        const fd = new FormData(); fd.append('video',file);
+        fd.append('people_threshold','0.45'); fd.append('vehicles_threshold','0.30'); fd.append('animals_threshold','0.25');
+        fd.append('detect_people','true'); fd.append('detect_vehicles','true'); fd.append('detect_animals','true');
+        fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(data=>{
+          document.getElementById('analyseProgress').style.display='none';
+          const grid = document.getElementById('analyseResults');
+          grid.innerHTML = data.frames.filter(f=>f.detections.length).map(f=>{
+            const tags = f.detections.map(d=>`<span class="det-tag ${d.category}">${d.label} ${(d.confidence*100).toFixed(0)}%</span>`).join('');
+            return `<div class="result-card"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy"><div class="card-body"><h4>Frame ${f.frame_number}</h4>${tags}</div></div>`;
+          }).join('');
+        }).catch(()=>{document.getElementById('analyseProgress').style.display='none';});
+      }
+
+      // Search
+      let searchTO;
+      function debounceSearch(){clearTimeout(searchTO);searchTO=setTimeout(runSearch,300);}
+      function runSearch() {
+        const params = new URLSearchParams();
+        const q = document.getElementById('searchQuery').value.trim();
+        const cam = document.getElementById('searchCamera').value;
+        const type = document.getElementById('searchType').value;
+        if(q) params.set('q',q); if(cam) params.set('camera',cam); if(type) params.set('event_type',type);
+        params.set('limit','60');
+        fetch('/events/search?'+params).then(r=>r.json()).then(data=>{
+          document.getElementById('searchResultCount').textContent = data.count+' results';
+          const camSel = document.getElementById('searchCamera');
+          if(camSel.options.length<=1 && data.cameras) data.cameras.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;camSel.appendChild(o);});
+          document.getElementById('searchResults').innerHTML = data.results.map(e=>`<div class="result-card"><a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"></a><div class="card-body"><h4>${e.camera_name} #${e.id}</h4><p>${e.timestamp}</p><span class="det-tag people">${e.event_type}</span></div></div>`).join('');
         });
       }
-
-      function removeCamera(id) {
-        fetch('/cameras/' + id, { method: 'DELETE' }).then(() => loadCameras());
-      }
-
-      loadCameras();
+      document.querySelector('[data-page="search"]').addEventListener('click',()=>setTimeout(runSearch,100));
     </script>
   </body>
 </html>
