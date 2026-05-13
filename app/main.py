@@ -19,8 +19,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
+from app.camera.discovery import build_rtsp_url, get_presets_list
 from app.export import events_to_csv, events_to_json_export, generate_case_report
 from app.notifications import get_notification_log, send_slack, send_webhook
+from app.scheduling import get_schedule_presets, is_within_schedule
 from app.tracking import HeatmapAccumulator
 from app.zones import load_zones, save_zones
 from app.camera.pipeline import CameraConfig, PipelineManager
@@ -812,6 +814,33 @@ def export_case_report(request: Request, case_id: str) -> Any:
         media_type="text/markdown",
         headers={"Content-Disposition": f"attachment; filename=case_{case_id}_report.md"},
     )
+
+
+@app.get("/cameras/presets")
+def camera_presets() -> list[dict[str, Any]]:
+    """Return camera brand presets with URL templates."""
+    return get_presets_list()
+
+
+class BuildUrlInput(BaseModel):
+    preset_id: str
+    params: dict[str, str]
+
+
+@app.post("/cameras/build-url")
+def build_camera_url(data: BuildUrlInput) -> dict[str, str]:
+    """Build an RTSP URL from a preset and user parameters."""
+    try:
+        url = build_rtsp_url(data.preset_id, data.params)
+        return {"url": url}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/schedules/presets")
+def schedule_presets() -> list[dict[str, Any]]:
+    """Return available schedule presets for alert rules."""
+    return get_schedule_presets()
 
 
 @app.get("/heatmap")

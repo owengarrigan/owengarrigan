@@ -1,984 +1,301 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0f1114">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/vigil_logo.png">
-    <title>Vigil — AI Video Intelligence</title>
-    <style>
-      :root {
-        --bg-base: #0f1114;
-        --bg-surface: #151921;
-        --bg-card: #1a1f28;
-        --bg-card-hover: #1f2531;
-        --bg-elevated: #242b37;
-        --bg-sidebar: #0c0e12;
-        --bg-input: #181d25;
-        --border: rgba(255,255,255,0.06);
-        --border-hover: rgba(255,255,255,0.12);
-        --text-primary: #f1f3f6;
-        --text-secondary: rgba(241,243,246,0.55);
-        --text-tertiary: rgba(241,243,246,0.30);
-        --accent: #3b82f6;
-        --accent-hover: #2563eb;
-        --accent-glow: rgba(59,130,246,0.10);
-        --accent-soft: rgba(59,130,246,0.07);
-        --green: #34d399;
-        --green-bg: rgba(52,211,153,0.08);
-        --orange: #fbbf24;
-        --orange-bg: rgba(251,191,36,0.08);
-        --blue: #60a5fa;
-        --blue-bg: rgba(96,165,250,0.08);
-        --red: #f87171;
-        --red-bg: rgba(248,113,113,0.08);
-        --purple: #a78bfa;
-        --purple-bg: rgba(167,139,250,0.08);
-        --cyan: #22d3ee;
-        --cyan-bg: rgba(34,211,238,0.08);
-        --radius: 14px;
-        --radius-sm: 10px;
-        --radius-xs: 6px;
-        --transition: 0.15s cubic-bezier(0.25,0.1,0.25,1);
-        --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
-        --sidebar-w: 240px;
-        --topbar-h: 0px;
-      }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: var(--font); background: var(--bg-base); color: var(--text-primary); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; }
-
-      /* SIDEBAR */
-      .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 200; overflow-y: auto; }
-      .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px 16px; }
-      .sidebar-brand img { width: 28px; height: 28px; border-radius: 7px; }
-      .sidebar-brand span { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
-      .sidebar-brand .badge-pro { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; background: linear-gradient(135deg, var(--accent), var(--purple)); color: white; margin-left: 4px; }
-
-      .nav-section { padding: 12px 12px 4px; }
-      .nav-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); padding: 0 8px 6px; }
-      .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; margin-bottom: 1px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
-      .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
-      .nav-item.active { background: var(--accent-soft); color: var(--accent); }
-      .nav-item svg { width: 16px; height: 16px; opacity: 0.45; flex-shrink: 0; }
-      .nav-item.active svg { opacity: 1; }
-      .nav-badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
-      .nav-badge.green { background: var(--green-bg); color: var(--green); }
-      .nav-tag { margin-left: auto; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 5px; border-radius: 4px; }
-      .nav-tag.new { background: var(--green-bg); color: var(--green); }
-      .nav-tag.beta { background: var(--orange-bg); color: var(--orange); }
-
-      .sidebar-footer { margin-top: auto; padding: 12px 18px; border-top: 1px solid var(--border); }
-      .sidebar-footer .plan-info { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; }
-      .sidebar-footer .plan-name { font-weight: 600; color: var(--accent); }
-      .sidebar-footer .status-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-tertiary); }
-      .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(52,211,153,0.4); }
-
-      /* MAIN */
-      .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; }
-      .page { display: none; }
-      .page.active { display: block; }
-      .page-header { padding: 24px 32px 0; display: flex; align-items: flex-end; justify-content: space-between; }
-      .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-      .page-header .subtitle { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
-      .page-body { padding: 20px 32px 48px; }
-
-      /* STAT CARDS */
-      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
-      .stat-card { padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); transition: var(--transition); }
-      .stat-card:hover { border-color: var(--border-hover); }
-      .stat-card .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-      .stat-card .stat-icon.green { background: var(--green-bg); color: var(--green); }
-      .stat-card .stat-icon.blue { background: var(--blue-bg); color: var(--blue); }
-      .stat-card .stat-icon.orange { background: var(--orange-bg); color: var(--orange); }
-      .stat-card .stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
-      .stat-card .stat-icon.cyan { background: var(--cyan-bg); color: var(--cyan); }
-      .stat-card .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
-      .stat-card .stat-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
-      .stat-card .stat-trend { font-size: 11px; color: var(--green); margin-top: 6px; }
-      .stat-card .stat-trend.down { color: var(--red); }
-
-      /* MODULES GRID */
-      .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 28px; }
-      .module-card { padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; }
-      .module-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
-      .module-card .module-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-      .module-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-      .module-card p { font-size: 12px; color: var(--text-tertiary); line-height: 1.4; }
-      .module-card .module-tag { position: absolute; top: 14px; right: 14px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; }
-      .module-tag.active { background: var(--green-bg); color: var(--green); }
-      .module-tag.coming { background: var(--orange-bg); color: var(--orange); }
-
-      /* ANALYTICS */
-      .analytics-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px; }
-      .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
-      .chart-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
-      .chart-placeholder { height: 180px; border-radius: 8px; background: linear-gradient(135deg, rgba(59,130,246,0.04) 0%, rgba(167,139,250,0.04) 100%); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 12px; }
-      .heatmap-placeholder { height: 240px; border-radius: 8px; background: linear-gradient(180deg, rgba(248,113,113,0.06) 0%, rgba(251,191,36,0.04) 40%, rgba(52,211,153,0.02) 100%); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 12px; position: relative; overflow: hidden; }
-      .heatmap-placeholder::before { content: ''; position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(circle, rgba(248,113,113,0.15) 0%, rgba(251,191,36,0.08) 40%, transparent 70%); }
-
-      /* COUNTERS */
-      .live-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
-      .counter-card { text-align: center; padding: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
-      .counter-card .counter-value { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; }
-      .counter-card .counter-label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
-      .counter-card.live .counter-value { color: var(--green); }
-      .counter-card.alert .counter-value { color: var(--red); }
-
-      /* ZONES */
-      .zones-container { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
-      .zone-canvas-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
-      .zone-canvas { width: 100%; aspect-ratio: 16/9; background: var(--bg-elevated); border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 13px; }
-      .zone-list { display: flex; flex-direction: column; gap: 8px; }
-      .zone-item { padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
-      .zone-item h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-      .zone-item p { font-size: 11px; color: var(--text-tertiary); }
-      .zone-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-      /* GENERIC COMPONENTS */
-      .form-input { padding: 9px 14px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); outline: none; transition: var(--transition); }
-      .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-      .form-input::placeholder { color: var(--text-tertiary); }
-      .form-select { padding: 9px 14px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); outline: none; }
-      .btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent); border: none; border-radius: 999px; cursor: pointer; transition: var(--transition); }
-      .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 16px var(--accent-glow); }
-      .btn-secondary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; cursor: pointer; transition: var(--transition); }
-      .btn-secondary:hover { border-color: var(--border-hover); color: var(--text-primary); }
-
-      /* DROP ZONE */
-      .drop-zone { position: relative; max-width: 600px; padding: 44px 28px; border: 1.5px dashed rgba(255,255,255,0.08); border-radius: var(--radius); background: var(--bg-surface); cursor: pointer; transition: var(--transition); text-align: center; }
-      .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 0 30px var(--accent-glow); }
-      .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-      .drop-zone h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-      .drop-zone p { font-size: 12px; color: var(--text-tertiary); }
-
-      /* RESULTS GRID */
-      .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 20px; }
-      .result-card { overflow: hidden; border-radius: var(--radius); background: var(--bg-card); border: 1px solid var(--border); transition: var(--transition); }
-      .result-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
-      .result-card img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: cover; background: var(--bg-elevated); }
-      .result-card .card-body { padding: 10px 12px; }
-      .result-card .card-body h4 { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
-      .result-card .card-body p { font-size: 11px; color: var(--text-tertiary); }
-      .det-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-right: 3px; margin-top: 3px; }
-      .det-tag.people { background: var(--green-bg); color: var(--green); }
-      .det-tag.vehicles { background: var(--blue-bg); color: var(--blue); }
-      .det-tag.animals { background: var(--orange-bg); color: var(--orange); }
-
-      /* EMPTY STATE */
-      .empty-state { text-align: center; padding: 48px 24px; color: var(--text-tertiary); }
-      .empty-state svg { margin-bottom: 10px; opacity: 0.2; }
-      .empty-state p { font-size: 13px; }
-
-      /* ZONES TOOLBAR */
-      .zones-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-
-      /* LIVE GRID */
-      .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 14px; }
-
-      /* AI SEARCH */
-      .ai-search-box { max-width: 640px; position: relative; margin-bottom: 12px; }
-      .ai-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
-      .ai-search-input { width: 100%; padding: 14px 18px 14px 46px; font-size: 15px; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-primary); outline: none; transition: var(--transition); }
-      .ai-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow), 0 4px 20px rgba(0,0,0,0.2); }
-      .ai-search-input::placeholder { color: var(--text-tertiary); }
-      .ai-suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; max-width: 640px; }
-      .ai-suggestions span { padding: 5px 12px; font-size: 11px; font-weight: 500; border-radius: 999px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; transition: var(--transition); }
-      .ai-suggestions span:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-
-      /* TIMELINE */
-      .timeline { position: relative; padding-left: 24px; }
-      .timeline::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: var(--border); }
-      .timeline-item { position: relative; margin-bottom: 12px; }
-      .timeline-dot { position: absolute; left: -24px; top: 14px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-base); z-index: 1; }
-      .timeline-dot.green { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
-      .timeline-dot.orange { background: var(--orange); box-shadow: 0 0 6px rgba(251,191,36,0.4); }
-      .timeline-dot.blue { background: var(--blue); box-shadow: 0 0 6px rgba(96,165,250,0.4); }
-      .timeline-card { display: flex; gap: 12px; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: var(--transition); }
-      .timeline-card:hover { border-color: var(--border-hover); }
-      .timeline-thumb { width: 72px; height: 48px; border-radius: 6px; object-fit: cover; background: var(--bg-elevated); flex-shrink: 0; }
-      .timeline-info { flex: 1; min-width: 0; }
-      .timeline-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-      .timeline-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
-      .timeline-time { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; }
-
-      /* ALERTS */
-      .rule-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; transition: var(--transition); }
-      .rule-card:hover { border-color: var(--border-hover); }
-      .rule-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-      .rule-info { flex: 1; }
-      .rule-name { font-size: 13px; font-weight: 600; }
-      .rule-desc { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
-      .rule-status { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 999px; }
-      .rule-status.active { background: var(--green-bg); color: var(--green); }
-
-      /* RESPONSIVE */
-      @media (max-width: 900px) { .analytics-row { grid-template-columns: 1fr; } .zones-container { grid-template-columns: 1fr; } }
-      @media (max-width: 768px) { .sidebar { width: 56px; } .sidebar-brand span, .nav-item span, .nav-badge, .nav-tag, .nav-section-label, .sidebar-footer .plan-info, .badge-pro { display: none; } .nav-item { justify-content: center; padding: 9px; } .sidebar-brand { justify-content: center; } .main { margin-left: 56px; } .page-header, .page-body { padding-left: 16px; padding-right: 16px; } }
-    </style>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <img src="/static/vigil_logo.png" alt="Vigil">
-        <span>Vigil</span>
-        <span class="badge-pro">PRO</span>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-section-label">Overview</div>
-        <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          <span>Dashboard</span>
-        </div>
-        <div class="nav-item" onclick="showPage('analytics')" data-page="analytics">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Analytics</span>
-          <span class="nav-tag new">New</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-section-label">Monitor</div>
-        <div class="nav-item" onclick="showPage('liveview')" data-page="liveview">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span>Live View</span>
-        </div>
-        <div class="nav-item" onclick="showPage('cameras')" data-page="cameras">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Cameras</span>
-          <span class="nav-badge green">{{ cameras|length }}</span>
-        </div>
-        <div class="nav-item" onclick="showPage('zones')" data-page="zones">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-          <span>Zones</span>
-          <span class="nav-tag beta">Beta</span>
-        </div>
-        <div class="nav-item" onclick="showPage('detections')" data-page="detections">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Detections</span>
-          <span class="nav-badge">{{ events|length }}</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-section-label">Intelligence</div>
-        <div class="nav-item" onclick="showPage('search')" data-page="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>Ask Vigil</span>
-          <span class="nav-tag new">AI</span>
-        </div>
-        <div class="nav-item" onclick="showPage('timeline')" data-page="timeline">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span>Timeline</span>
-        </div>
-        <div class="nav-item" onclick="showPage('alerts')" data-page="alerts">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span>Alerts</span>
-          <span class="nav-badge" id="alertBadge" style="display:none">0</span>
-        </div>
-        <div class="nav-item" onclick="showPage('analyse')" data-page="analyse">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          <span>Analyse</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-section-label">Investigate</div>
-        <div class="nav-item" onclick="showPage('cases')" data-page="cases">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <span>Case Manager</span>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <div class="nav-section-label">System</div>
-        <div class="nav-item" onclick="showPage('health')" data-page="health">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>System Health</span>
-        </div>
-        <div class="nav-item" onclick="showPage('settings')" data-page="settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Settings</span>
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="plan-info"><span class="plan-name">Pro Plan</span> &middot; Unlimited cameras</div>
-        <div class="status-row"><span class="status-dot"></span> <span>System Online &middot; YOLO11m</span></div>
-      </div>
-    </aside>
-
-    <div class="main">
-      <!-- DASHBOARD -->
-      <div class="page active" id="page-dashboard">
-        <div class="page-header"><div><h1>Dashboard</h1><div class="subtitle">Real-time overview of all connected systems</div></div></div>
-        <div class="page-body">
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="stat-value" id="dsPeople">0</div><div class="stat-label">People Today</div><div class="stat-trend">↑ Live counting</div></div>
-            <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><div class="stat-value" id="dsCameras">{{ cameras|length }}</div><div class="stat-label">Active Cameras</div><div class="stat-trend">All online</div></div>
-            <div class="stat-card"><div class="stat-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="stat-value" id="dsAlerts">0</div><div class="stat-label">Alerts Today</div></div>
-            <div class="stat-card"><div class="stat-icon purple"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="stat-value" id="dsEvents">{{ events|length }}</div><div class="stat-label">Total Events</div></div>
-            <div class="stat-card"><div class="stat-icon cyan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="stat-value">24/7</div><div class="stat-label">Uptime</div><div class="stat-trend">Edge processing</div></div>
-          </div>
-
-          <h2 style="font-size:16px; font-weight:600; margin-bottom:14px;">Modules</h2>
-          <div class="modules-grid">
-            <div class="module-card" onclick="showPage('detections')">
-              <div class="module-icon" style="background:var(--green-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <span class="module-tag active">Active</span>
-              <h3>Security &amp; Intrusion</h3>
-              <p>Person detection, vehicle alerts, perimeter monitoring</p>
-            </div>
-            <div class="module-card" onclick="showPage('analytics')">
-              <div class="module-icon" style="background:var(--blue-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-              <span class="module-tag active">Active</span>
-              <h3>Retail Analytics</h3>
-              <p>People counting, heatmaps, dwell time, queue detection</p>
-            </div>
-            <div class="module-card" onclick="showPage('zones')">
-              <div class="module-icon" style="background:var(--orange-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="23 7 16 12 23 17"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
-              <span class="module-tag active">Active</span>
-              <h3>Warehouse &amp; Fleet</h3>
-              <p>Forklift speed, vehicle tracking, PPE compliance, zone violations</p>
-            </div>
-            <div class="module-card">
-              <div class="module-icon" style="background:var(--purple-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-              <span class="module-tag coming">Coming Soon</span>
-              <h3>License Plate Recognition</h3>
-              <p>ANPR, vehicle logging, access control integration</p>
-            </div>
-            <div class="module-card">
-              <div class="module-icon" style="background:var(--cyan-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-              <span class="module-tag coming">Coming Soon</span>
-              <h3>PPE &amp; Safety</h3>
-              <p>Hardhat, hi-vis, gloves detection for construction and manufacturing</p>
-            </div>
-            <div class="module-card">
-              <div class="module-icon" style="background:var(--red-bg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-              <span class="module-tag coming">Coming Soon</span>
-              <h3>Anomaly Detection</h3>
-              <p>Loitering, crowd formation, unusual activity patterns</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ANALYTICS -->
-      <div class="page" id="page-analytics">
-        <div class="page-header"><div><h1>Analytics</h1><div class="subtitle">People counting, heatmaps, and traffic flow</div></div><button class="btn-secondary">Export Report</button></div>
-        <div class="page-body">
-          <div class="live-counters">
-            <div class="counter-card live"><div class="counter-value" id="liveCount">0</div><div class="counter-label">People Now</div></div>
-            <div class="counter-card"><div class="counter-value" id="todayCount">0</div><div class="counter-label">Today Total</div></div>
-            <div class="counter-card"><div class="counter-value" id="avgDwell">—</div><div class="counter-label">Avg Dwell Time</div></div>
-            <div class="counter-card"><div class="counter-value" id="peakHour">—</div><div class="counter-label">Peak Hour</div></div>
-            <div class="counter-card alert"><div class="counter-value" id="speedAlerts">0</div><div class="counter-label">Speed Violations</div></div>
-          </div>
-          <div class="analytics-row">
-            <div class="chart-card">
-              <h3>Footfall Over Time</h3>
-              <div class="chart-placeholder">
-                <svg width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none">
-                  <polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,140 30,120 60,100 90,80 120,90 150,60 180,70 210,40 240,50 270,30 300,45 330,35 360,20 400,25" opacity="0.6"/>
-                  <polyline fill="none" stroke="var(--green)" stroke-width="2" points="0,150 30,145 60,130 90,120 120,125 150,110 180,115 210,100 240,105 270,95 300,100 330,90 360,85 400,80" opacity="0.4"/>
-                </svg>
-              </div>
-            </div>
-            <div class="chart-card">
-              <h3>Heatmap</h3>
-              <canvas id="heatmapCanvas" width="256" height="192" style="width:100%;height:180px;border-radius:8px;background:var(--bg-elevated)"></canvas>
-              <div style="font-size:10px;color:var(--text-tertiary);margin-top:6px;text-align:center" id="heatmapInfo">Loading heatmap data…</div>
-            </div>
-          </div>
-          <div class="analytics-row">
-            <div class="chart-card">
-              <h3>Vehicle Activity</h3>
-              <div class="chart-placeholder">
-                <svg width="100%" height="100%" viewBox="0 0 400 160" preserveAspectRatio="none">
-                  <rect x="20" y="100" width="30" height="50" fill="var(--blue)" opacity="0.3" rx="3"/>
-                  <rect x="60" y="80" width="30" height="70" fill="var(--blue)" opacity="0.4" rx="3"/>
-                  <rect x="100" y="60" width="30" height="90" fill="var(--blue)" opacity="0.5" rx="3"/>
-                  <rect x="140" y="90" width="30" height="60" fill="var(--blue)" opacity="0.35" rx="3"/>
-                  <rect x="180" y="70" width="30" height="80" fill="var(--blue)" opacity="0.45" rx="3"/>
-                  <rect x="220" y="40" width="30" height="110" fill="var(--blue)" opacity="0.6" rx="3"/>
-                  <rect x="260" y="55" width="30" height="95" fill="var(--blue)" opacity="0.5" rx="3"/>
-                  <rect x="300" y="75" width="30" height="75" fill="var(--blue)" opacity="0.4" rx="3"/>
-                  <rect x="340" y="110" width="30" height="40" fill="var(--blue)" opacity="0.3" rx="3"/>
-                </svg>
-              </div>
-            </div>
-            <div class="chart-card">
-              <h3>Detection Breakdown</h3>
-              <div style="padding:20px 0">
-                <div style="display:flex; justify-content:center; gap:20px;">
-                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--green)" id="anPeople">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">People</div></div>
-                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--blue)" id="anVehicles">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">Vehicles</div></div>
-                  <div style="text-align:center"><div style="font-size:24px; font-weight:700; color:var(--orange)" id="anAnimals">0</div><div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; margin-top:2px">Animals</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LIVE VIEW -->
-      <div class="page" id="page-liveview">
-        <div class="page-header"><div><h1>Live View</h1><div class="subtitle">Multi-camera grid — all feeds at a glance</div></div></div>
-        <div class="page-body">
-          <div class="live-grid" id="liveGrid">
-            <div class="empty-state"><p>Add cameras to see live feeds here. Go to Cameras → Add a UniFi or RTSP stream.</p></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CAMERAS -->
-      <div class="page" id="page-cameras">
-        <div class="page-header"><div><h1>Cameras</h1><div class="subtitle">Manage live feeds — UniFi Protect, RTSP, and more</div></div></div>
-        <div class="page-body">
-          <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; max-width:640px;">
-            <input class="form-input" id="camName" type="text" placeholder="Camera name" style="flex:1; min-width:140px">
-            <input class="form-input" id="camUrl" type="text" placeholder="URL (UniFi link or RTSP)" style="flex:2; min-width:200px">
-            <select class="form-select" id="camType"><option value="unifi">UniFi Protect</option><option value="rtsp">RTSP / ONVIF</option><option value="scrypted">Scrypted (HomeKit)</option></select>
-            <button class="btn-primary" onclick="addCamera()">Add</button>
-          </div>
-          <div id="camerasContainer"></div>
-        </div>
-      </div>
-
-      <!-- ZONES -->
-      <div class="page" id="page-zones">
-        <div class="page-header"><div><h1>Zones</h1><div class="subtitle">Draw regions for detection, exclusion, counting lines, and speed limits</div></div></div>
-        <div class="page-body">
-          <div class="zones-toolbar">
-            <select class="form-select" id="zoneType" style="font-size:12px">
-              <option value="detection">Detection Zone</option>
-              <option value="exclusion">Exclusion Zone</option>
-              <option value="counting_line">Counting Line</option>
-              <option value="speed_limit">Speed Limit Zone</option>
-            </select>
-            <input class="form-input" id="zoneName" placeholder="Zone name" style="font-size:12px; width:160px">
-            <input type="color" id="zoneColor" value="#3b82f6" style="width:32px; height:32px; border:none; border-radius:6px; cursor:pointer">
-            <button class="btn-primary" onclick="saveCurrentZone()" style="font-size:12px">Save Zone</button>
-            <button class="btn-secondary" onclick="clearDrawing()" style="font-size:11px">Clear</button>
-          </div>
-          <div class="zones-container">
-            <div class="zone-canvas-wrap">
-              <canvas id="zoneCanvas" width="960" height="540" style="width:100%; cursor:crosshair; border-radius:8px; background:var(--bg-elevated)"></canvas>
-              <div style="font-size:10px; color:var(--text-tertiary); margin-top:6px">Click to add points • Double-click to close polygon • Right-click to undo</div>
-            </div>
-            <div class="zone-list" id="zonesList"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DETECTIONS -->
-      <div class="page" id="page-detections">
-        <div class="page-header"><div><h1>Detections</h1><div class="subtitle">Real-time event stream from all cameras</div></div><div style="display:flex;gap:6px"><a href="/export/csv" class="btn-secondary" style="text-decoration:none;font-size:11px">↓ CSV</a><a href="/export/json" class="btn-secondary" style="text-decoration:none;font-size:11px">↓ JSON</a></div></div>
-        <div class="page-body">
-          {% if events %}
-          <div class="results-grid">
-            {% for event in events[:24] %}
-            <div class="result-card">
-              <a href="/snapshots/{{ event.snapshot_filename }}"><img src="/snapshots/{{ event.snapshot_filename }}" alt="" loading="lazy"></a>
-              <div class="card-body">
-                <h4>{{ event.camera_name }} &middot; #{{ event.id }}</h4>
-                <p>{{ event.timestamp }}</p>
-                <span class="det-tag people">{{ event.event_type }}</span>
-                <span class="det-tag" style="background:var(--bg-elevated); color:var(--text-secondary)">{{ "%.0f%%"|format(event.confidence * 100) }}</span>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><p>No detections yet. Connect a camera or analyse a video.</p></div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- ANALYSE -->
-      <div class="page" id="page-analyse">
-        <div class="page-header"><div><h1>Analyse</h1><div class="subtitle">Upload video for instant AI detection</div></div></div>
-        <div class="page-body">
-          <div class="drop-zone" id="dropZone">
-            <input type="file" id="fileInput" accept="video/*">
-            <h3>Drop video here</h3>
-            <p>or click to browse &middot; MP4, MOV, AVI</p>
-          </div>
-          <div id="analyseProgress" style="display:none; margin-top:16px; font-size:13px; color:var(--text-secondary)">Analysing…</div>
-          <div class="results-grid" id="analyseResults"></div>
-        </div>
-      </div>
-
-      <!-- ASK VIGIL (AI Search) -->
-      <div class="page" id="page-search">
-        <div class="page-header"><div><h1>Ask Vigil</h1><div class="subtitle">Search your cameras with natural language</div></div></div>
-        <div class="page-body">
-          <div class="ai-search-box">
-            <div class="ai-search-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-            <input class="ai-search-input" id="searchQuery" type="text" placeholder="Try: &quot;Show me the fox from last night&quot; or &quot;Find all vehicles this week&quot;" oninput="debounceSearch()" onkeydown="if(event.key==='Enter')runSearch()">
-          </div>
-          <div class="ai-suggestions">
-            <span onclick="quickSearch('Show me all people today')">Show me all people today</span>
-            <span onclick="quickSearch('Find animals last night')">Find animals last night</span>
-            <span onclick="quickSearch('Vehicles with high confidence')">Vehicles with high confidence</span>
-            <span onclick="quickSearch('Show me everything from front door')">Everything from front door</span>
-          </div>
-          <div id="searchParsed" style="margin-bottom:14px"></div>
-          <div id="searchResultCount" style="font-size:12px; color:var(--text-tertiary); margin-bottom:12px"></div>
-          <div class="results-grid" id="searchResults"></div>
-        </div>
-      </div>
-
-      <!-- TIMELINE -->
-      <div class="page" id="page-timeline">
-        <div class="page-header"><div><h1>Timeline</h1><div class="subtitle">Chronological activity feed across all cameras</div></div></div>
-        <div class="page-body">
-          <div class="timeline" id="timelineContainer">
-            {% for event in events[:30] %}
-            <div class="timeline-item">
-              <div class="timeline-dot {% if 'person' in event.labels_detected|join(',') %}green{% elif 'dog' in event.labels_detected|join(',') or 'cat' in event.labels_detected|join(',') %}orange{% else %}blue{% endif %}"></div>
-              <div class="timeline-content">
-                <div class="timeline-card">
-                  <img class="timeline-thumb" src="/snapshots/{{ event.snapshot_filename }}" alt="" loading="lazy">
-                  <div class="timeline-info">
-                    <div class="timeline-title">{{ event.event_type | replace('_', ' ') | title }}</div>
-                    <div class="timeline-desc">{{ event.labels_detected | join(', ') }} detected at {{ event.camera_name }} &middot; {{ "%.0f%%"|format(event.confidence * 100) }} confidence</div>
-                    <div class="timeline-time">{{ event.timestamp }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-            {% if not events %}
-            <div class="empty-state"><p>No activity yet. Events will appear here as they're detected.</p></div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-      <!-- ALERTS -->
-      <div class="page" id="page-alerts">
-        <div class="page-header"><div><h1>Alerts</h1><div class="subtitle">Real-time notifications and automation rules</div></div><button class="btn-primary" onclick="showAddRule()">+ New Rule</button></div>
-        <div class="page-body">
-          <div class="alerts-rules" id="alertRules">
-            <h3 style="font-size:14px; font-weight:600; margin-bottom:12px">Active Rules</h3>
-            <div class="rule-card">
-              <div class="rule-icon" style="background:var(--red-bg); color:var(--red)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-              <div class="rule-info"><div class="rule-name">Person in Restricted Area</div><div class="rule-desc">Alert when a person enters the restricted zone</div></div>
-              <div class="rule-status active">Active</div>
-            </div>
-            <div class="rule-card">
-              <div class="rule-icon" style="background:var(--orange-bg); color:var(--orange)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
-              <div class="rule-info"><div class="rule-name">Speed Violation — Loading Bay</div><div class="rule-desc">Alert when vehicle exceeds 5mph in loading area</div></div>
-              <div class="rule-status active">Active</div>
-            </div>
-            <div class="rule-card">
-              <div class="rule-icon" style="background:var(--green-bg); color:var(--green)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div>
-              <div class="rule-info"><div class="rule-name">After-hours Motion</div><div class="rule-desc">Notify on any detection between 11pm–6am</div></div>
-              <div class="rule-status active">Active</div>
-            </div>
-          </div>
-
-          <h3 style="font-size:14px; font-weight:600; margin:28px 0 12px">Webhook Notifications</h3>
-          <div style="max-width:500px; margin-bottom:24px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)">
-            <div style="font-size:12px; color:var(--text-tertiary); margin-bottom:10px">Send alerts to Slack, Discord, or any webhook URL</div>
-            <div style="display:flex; gap:8px">
-              <input class="form-input" id="webhookUrl" placeholder="https://hooks.slack.com/services/..." style="flex:1; font-size:12px">
-              <button class="btn-secondary" onclick="testWebhook()" style="font-size:11px">Test</button>
-            </div>
-            <div id="webhookResult" style="font-size:11px; margin-top:6px; display:none"></div>
-          </div>
-
-          <h3 style="font-size:14px; font-weight:600; margin-bottom:12px">Recent Alerts</h3>
-          <div class="alerts-feed" id="alertsFeed">
-            <div class="empty-state" style="padding:32px"><p>No alerts triggered yet. Rules will fire when matching detections occur.</p></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CASE MANAGER -->
-      <div class="page" id="page-cases">
-        <div class="page-header"><div><h1>Case Manager</h1><div class="subtitle">Build incident reports, attach evidence, export</div></div><button class="btn-primary" onclick="showNewCaseForm()">+ New Case</button></div>
-        <div class="page-body">
-          <div id="newCaseForm" style="display:none; max-width:500px; margin-bottom:24px; padding:18px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius)">
-            <input class="form-input" id="caseTitle" placeholder="Case title (e.g. Break-in attempt 12 May)" style="width:100%; margin-bottom:8px">
-            <textarea class="form-input" id="caseDesc" placeholder="Description / notes" style="width:100%; height:80px; resize:vertical; margin-bottom:10px"></textarea>
-            <div style="display:flex; gap:8px"><button class="btn-primary" onclick="createCase()">Create Case</button><button class="btn-secondary" onclick="document.getElementById('newCaseForm').style.display='none'">Cancel</button></div>
-          </div>
-          <div id="casesList"></div>
-        </div>
-      </div>
-
-      <!-- SYSTEM HEALTH -->
-      <div class="page" id="page-health">
-        <div class="page-header"><div><h1>System Health</h1><div class="subtitle">Real-time processing status and resource usage</div></div></div>
-        <div class="page-body">
-          <div class="stats-grid" id="healthStats">
-            <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="stat-value" id="hStatus" style="color:var(--green)">Online</div><div class="stat-label">System Status</div></div>
-            <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8l-2 4h12z"/></svg></div><div class="stat-value" id="hModel">YOLO11m</div><div class="stat-label">Inference Model</div><div class="stat-sub">20.1M parameters</div></div>
-            <div class="stat-card"><div class="stat-icon purple"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div class="stat-value" id="hEvents">—</div><div class="stat-label">Total Events</div></div>
-            <div class="stat-card"><div class="stat-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="stat-value" id="hSnapshots">—</div><div class="stat-label">Snapshots</div></div>
-            <div class="stat-card"><div class="stat-icon cyan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="5" width="15" height="14" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><div class="stat-value" id="hPipelines">0</div><div class="stat-label">Active Pipelines</div></div>
-          </div>
-          <div style="margin-top:20px">
-            <h3 style="font-size:14px; font-weight:600; margin-bottom:12px">Storage</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; max-width:500px">
-              <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)"><div style="font-size:12px; color:var(--text-tertiary)">Database</div><div style="font-size:18px; font-weight:700; margin-top:4px" id="hDbSize">—</div></div>
-              <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm)"><div style="font-size:12px; color:var(--text-tertiary)">Snapshots</div><div style="font-size:18px; font-weight:700; margin-top:4px" id="hSnapSize">—</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SETTINGS -->
-      <div class="page" id="page-settings">
-        <div class="page-header"><div><h1>Settings</h1><div class="subtitle">Detection thresholds, model, and account</div></div></div>
-        <div class="page-body">
-          <div style="max-width:520px">
-            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Detection Thresholds</h3>
-            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:28px">
-              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">People</span><input type="range" min="10" max="90" value="45" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">45%</span></div>
-              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">30%</span></div>
-              <div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; min-width:70px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1; accent-color:var(--accent)"><span style="font-size:12px; color:var(--text-secondary); min-width:30px">25%</span></div>
-            </div>
-            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Model</h3>
-            <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:28px; display:flex; justify-content:space-between; align-items:center">
-              <div><div style="font-size:14px; font-weight:600">YOLO11m</div><div style="font-size:11px; color:var(--text-tertiary)">20M parameters &middot; COCO 80 classes &middot; Balanced accuracy + speed</div></div>
-              <span style="font-size:11px; color:var(--green); font-weight:600">Active</span>
-            </div>
-            <h3 style="font-size:13px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px">Storage</h3>
-            <div style="padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center">
-              <div><div style="font-size:14px; font-weight:600">Retention</div><div style="font-size:11px; color:var(--text-tertiary)">Keep most recent 1000 events, auto-delete older snapshots</div></div>
-              <button class="btn-secondary" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Now</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script>
-      function showPage(name) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('page-' + name).classList.add('active');
-        const navEl = document.querySelector('[data-page="' + name + '"]');
-        if (navEl) navEl.classList.add('active');
-      }
-
-      // Dashboard stats
-      fetch('/stats').then(r=>r.json()).then(d => {
-        const lc = d.label_counts || {};
-        document.getElementById('dsPeople').textContent = lc.person || 0;
-        document.getElementById('dsEvents').textContent = d.total_events || 0;
-        document.getElementById('anPeople').textContent = lc.person || 0;
-        const vl = ['bicycle','car','motorcycle','airplane','bus','train','truck','boat'];
-        const al = ['bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe'];
-        let vc=0,ac=0; vl.forEach(l=>vc+=(lc[l]||0)); al.forEach(l=>ac+=(lc[l]||0));
-        document.getElementById('anVehicles').textContent = vc;
-        document.getElementById('anAnimals').textContent = ac;
-        document.getElementById('todayCount').textContent = lc.person || 0;
-      }).catch(()=>{});
-
-      // Cameras
-      function loadCameras() {
-        fetch('/cameras').then(r=>r.json()).then(cams => {
-          const c = document.getElementById('camerasContainer');
-          if (!cams.length) { c.innerHTML = '<div class="empty-state"><p>No cameras added. Add a UniFi Protect link or RTSP URL above.</p></div>'; return; }
-          c.innerHTML = '<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:14px">' + cams.map(cam => {
-            const badge = cam.type==='unifi' ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--blue-bg);color:var(--blue)">UniFi</span>' : '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green)">RTSP</span>';
-            const content = cam.type==='unifi' ? `<iframe src="${cam.url}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;background:var(--bg-elevated)" allow="autoplay;fullscreen;encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" loading="lazy"></iframe><div style="padding:8px 0"><a href="${cam.url}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">↗ Open Live Stream</a></div>` : `<div style="padding:24px;text-align:center;color:var(--text-tertiary);font-size:12px"><code style="display:block;margin-top:6px;padding:6px 10px;background:var(--bg-elevated);border-radius:4px;font-size:11px;word-break:break-all">${cam.url}</code></div>`;
-            return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">${badge} ${cam.name}</div><button onclick="removeCamera('${cam.id}')" style="font-size:11px;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-tertiary);cursor:pointer">Remove</button></div><div style="padding:10px">${content}</div></div>`;
-          }).join('') + '</div>';
-        });
-      }
-      function addCamera() {
-        const name = document.getElementById('camName').value.trim();
-        const url = document.getElementById('camUrl').value.trim();
-        const type = document.getElementById('camType').value;
-        if (!name||!url) return;
-        fetch('/cameras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,url,type})}).then(r=>r.json()).then(()=>{document.getElementById('camName').value='';document.getElementById('camUrl').value='';loadCameras();});
-      }
-      function removeCamera(id) { fetch('/cameras/'+id,{method:'DELETE'}).then(()=>loadCameras()); }
-      loadCameras();
-
-      // Analyse
-      const dropZone = document.getElementById('dropZone');
-      const fileInput = document.getElementById('fileInput');
-      ['dragenter','dragover'].forEach(e=>dropZone.addEventListener(e,ev=>{ev.preventDefault();dropZone.classList.add('drag-over');}));
-      ['dragleave','drop'].forEach(e=>dropZone.addEventListener(e,ev=>{ev.preventDefault();dropZone.classList.remove('drag-over');}));
-      dropZone.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])uploadFile(ev.dataTransfer.files[0]);});
-      fileInput.addEventListener('change',()=>{if(fileInput.files[0])uploadFile(fileInput.files[0]);});
-
-      function uploadFile(file) {
-        document.getElementById('analyseProgress').style.display='block';
-        document.getElementById('analyseResults').innerHTML='';
-        const fd = new FormData(); fd.append('video',file);
-        fd.append('people_threshold','0.45'); fd.append('vehicles_threshold','0.30'); fd.append('animals_threshold','0.25');
-        fd.append('detect_people','true'); fd.append('detect_vehicles','true'); fd.append('detect_animals','true');
-        fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(data=>{
-          document.getElementById('analyseProgress').style.display='none';
-          const grid = document.getElementById('analyseResults');
-          grid.innerHTML = data.frames.filter(f=>f.detections.length).map(f=>{
-            const tags = f.detections.map(d=>`<span class="det-tag ${d.category}">${d.label} ${(d.confidence*100).toFixed(0)}%</span>`).join('');
-            return `<div class="result-card"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy"><div class="card-body"><h4>Frame ${f.frame_number}</h4>${tags}</div></div>`;
-          }).join('');
-        }).catch(()=>{document.getElementById('analyseProgress').style.display='none';});
-      }
-
-      // AI Search
-      let searchTO;
-      function debounceSearch(){clearTimeout(searchTO);searchTO=setTimeout(runSearch,400);}
-      function quickSearch(text) {
-        document.getElementById('searchQuery').value = text;
-        runSearch();
-      }
-      function runSearch() {
-        const q = document.getElementById('searchQuery').value.trim();
-        if (!q) { document.getElementById('searchResults').innerHTML=''; document.getElementById('searchResultCount').textContent=''; document.getElementById('searchParsed').innerHTML=''; return; }
-        const params = new URLSearchParams();
-        params.set('q', q);
-        params.set('limit', '40');
-        fetch('/events/search?'+params).then(r=>r.json()).then(data=>{
-          // Show parsed filters
-          const pf = data.parsed_filters || {};
-          let chips = '';
-          if (pf.event_type) chips += `<span class="det-tag ${pf.event_type.includes('person')?'people':pf.event_type.includes('animal')?'animals':'vehicles'}">${pf.event_type.replace('_',' ')}</span>`;
-          if (pf.min_confidence) chips += `<span class="det-tag" style="background:var(--bg-elevated);color:var(--text-secondary)">≥${(pf.min_confidence*100).toFixed(0)}% conf</span>`;
-          if (pf.time_hint) chips += `<span class="det-tag" style="background:var(--purple-bg);color:var(--purple)">${pf.time_hint}</span>`;
-          document.getElementById('searchParsed').innerHTML = chips ? '<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:4px">Understood as:</div>' + chips : '';
-
-          document.getElementById('searchResultCount').textContent = data.count + ' results found';
-
-          const descs = data.descriptions || [];
-          document.getElementById('searchResults').innerHTML = data.results.map((e,i) => {
-            const desc = descs[i] || '';
-            return `<div class="result-card"><a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"></a><div class="card-body"><h4>${desc || e.camera_name+' #'+e.id}</h4><p style="font-size:10px; color:var(--text-tertiary)">${e.timestamp}</p></div></div>`;
-          }).join('');
-        });
-      }
-      document.querySelector('[data-page="search"]').addEventListener('click',()=>{if(!document.getElementById('searchQuery').value)return;setTimeout(runSearch,100);});
-
-      // Live View
-      function loadLiveView() {
-        fetch('/cameras').then(r=>r.json()).then(cams => {
-          const grid = document.getElementById('liveGrid');
-          if (!cams.length) { grid.innerHTML = '<div class="empty-state"><p>No cameras added. Go to Cameras to add feeds.</p></div>'; return; }
-          grid.innerHTML = cams.map(cam => {
-            if (cam.type === 'unifi') {
-              return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden"><iframe src="${cam.url}" style="width:100%;aspect-ratio:16/9;border:none" allow="autoplay;fullscreen;encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" loading="lazy"></iframe><div style="padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;border-top:1px solid var(--border)"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green)"></span>${cam.name}</div></div>`;
-            }
-            return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;color:var(--text-tertiary);font-size:12px;text-align:center"><div><div style="font-weight:600;margin-bottom:4px">${cam.name}</div><code style="font-size:10px">${cam.url}</code><div style="margin-top:8px;color:var(--green);font-size:10px">RTSP &middot; Processing</div></div></div>`;
-          }).join('');
-        });
-      }
-      document.querySelector('[data-page="liveview"]').addEventListener('click',()=>setTimeout(loadLiveView,50));
-
-      // Case Manager
-      function showNewCaseForm() { document.getElementById('newCaseForm').style.display = 'block'; }
-      function createCase() {
-        const title = document.getElementById('caseTitle').value.trim();
-        const desc = document.getElementById('caseDesc').value.trim();
-        if (!title) return;
-        fetch('/cases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description:desc,event_ids:[]})}).then(r=>r.json()).then(()=>{
-          document.getElementById('caseTitle').value='';
-          document.getElementById('caseDesc').value='';
-          document.getElementById('newCaseForm').style.display='none';
-          loadCases();
-        });
-      }
-      function loadCases() {
-        fetch('/cases').then(r=>r.json()).then(cases => {
-          const el = document.getElementById('casesList');
-          if (!cases.length) { el.innerHTML = '<div class="empty-state"><p>No cases yet. Create one to start building an incident report.</p></div>'; return; }
-          el.innerHTML = cases.map(c => {
-            const statusColor = c.status==='open' ? 'var(--orange)' : c.status==='closed' ? 'var(--green)' : 'var(--text-tertiary)';
-            return `<div class="rule-card" style="margin-bottom:10px">
-              <div class="rule-icon" style="background:var(--accent-soft);color:var(--accent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-              <div class="rule-info"><div class="rule-name">${c.title}</div><div class="rule-desc">${c.description||'No description'} &middot; ${c.event_ids.length} events &middot; ${c.notes.length} notes</div></div>
-              <div style="font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:${statusColor}20;color:${statusColor}">${c.status}</div>
-            </div>`;
-          }).join('');
-        });
-      }
-      document.querySelector('[data-page="cases"]').addEventListener('click',()=>setTimeout(loadCases,50));
-
-      // System Health
-      function loadHealth() {
-        fetch('/system/health').then(r=>r.json()).then(d => {
-          document.getElementById('hEvents').textContent = d.total_events;
-          document.getElementById('hSnapshots').textContent = d.snapshots_count;
-          document.getElementById('hPipelines').textContent = d.active_pipelines;
-          document.getElementById('hDbSize').textContent = d.database_size_mb + ' MB';
-          document.getElementById('hSnapSize').textContent = d.snapshots_size_mb + ' MB';
-        });
-      }
-      document.querySelector('[data-page="health"]').addEventListener('click',()=>setTimeout(loadHealth,50));
-
-      // Zone drawing
-      let zonePoints = [];
-      let savedZones = [];
-      const zoneCanvas = document.getElementById('zoneCanvas');
-      const zoneCtx = zoneCanvas ? zoneCanvas.getContext('2d') : null;
-
-      if (zoneCanvas) {
-        zoneCanvas.addEventListener('click', (e) => {
-          const rect = zoneCanvas.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width;
-          const y = (e.clientY - rect.top) / rect.height;
-          zonePoints.push({x, y});
-          drawZones();
-        });
-
-        zoneCanvas.addEventListener('dblclick', (e) => {
-          e.preventDefault();
-          if (zonePoints.length >= 3) saveCurrentZone();
-        });
-
-        zoneCanvas.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          zonePoints.pop();
-          drawZones();
-        });
-      }
-
-      function drawZones() {
-        if (!zoneCtx) return;
-        const w = zoneCanvas.width;
-        const h = zoneCanvas.height;
-        zoneCtx.clearRect(0, 0, w, h);
-
-        // Draw saved zones
-        savedZones.forEach(z => {
-          if (z.points.length < 2) return;
-          zoneCtx.beginPath();
-          zoneCtx.moveTo(z.points[0].x * w, z.points[0].y * h);
-          z.points.forEach((p, i) => { if (i > 0) zoneCtx.lineTo(p.x * w, p.y * h); });
-          zoneCtx.closePath();
-          zoneCtx.fillStyle = z.color + '20';
-          zoneCtx.fill();
-          zoneCtx.strokeStyle = z.color;
-          zoneCtx.lineWidth = 2;
-          zoneCtx.stroke();
-          // Label
-          zoneCtx.fillStyle = z.color;
-          zoneCtx.font = '12px -apple-system, sans-serif';
-          zoneCtx.fillText(z.name, z.points[0].x * w + 4, z.points[0].y * h + 14);
-        });
-
-        // Draw current polygon in progress
-        if (zonePoints.length > 0) {
-          const color = document.getElementById('zoneColor').value;
-          zoneCtx.beginPath();
-          zoneCtx.moveTo(zonePoints[0].x * w, zonePoints[0].y * h);
-          zonePoints.forEach((p, i) => { if (i > 0) zoneCtx.lineTo(p.x * w, p.y * h); });
-          zoneCtx.strokeStyle = color;
-          zoneCtx.lineWidth = 2;
-          zoneCtx.setLineDash([5, 5]);
-          zoneCtx.stroke();
-          zoneCtx.setLineDash([]);
-
-          // Draw points
-          zonePoints.forEach(p => {
-            zoneCtx.beginPath();
-            zoneCtx.arc(p.x * w, p.y * h, 4, 0, Math.PI * 2);
-            zoneCtx.fillStyle = color;
-            zoneCtx.fill();
-          });
-        }
-      }
-
-      function saveCurrentZone() {
-        if (zonePoints.length < 3) { alert('Draw at least 3 points to create a zone'); return; }
-        const name = document.getElementById('zoneName').value.trim() || 'Zone ' + (savedZones.length + 1);
-        const zoneType = document.getElementById('zoneType').value;
-        const color = document.getElementById('zoneColor').value;
-        const config = {};
-        if (zoneType === 'speed_limit') config.speed_limit_mph = 5;
-        if (zoneType === 'counting_line') config.direction = 'in';
-
-        fetch('/zones', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({name, zone_type: zoneType, points: zonePoints, color, config, camera_id: '', enabled: true})
-        }).then(r=>r.json()).then(z => {
-          zonePoints = [];
-          document.getElementById('zoneName').value = '';
-          loadZones();
-        });
-      }
-
-      function clearDrawing() { zonePoints = []; drawZones(); }
-
-      function loadZones() {
-        fetch('/zones').then(r=>r.json()).then(zones => {
-          savedZones = zones;
-          drawZones();
-          const list = document.getElementById('zonesList');
-          if (!zones.length) { list.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px;padding:16px">No zones defined. Click on the canvas to draw.</div>'; return; }
-          list.innerHTML = zones.map(z => {
-            const typeLabels = {detection:'Detection',exclusion:'Exclusion',counting_line:'Counting Line',speed_limit:'Speed Limit'};
-            return `<div class="zone-item"><h4><span class="zone-dot" style="background:${z.color}"></span> ${z.name}</h4><p>${typeLabels[z.zone_type]||z.zone_type} &middot; ${z.points.length} points</p><button onclick="deleteZone('${z.id}')" style="font-size:10px;color:var(--text-tertiary);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:4px">Remove</button></div>`;
-          }).join('');
-        });
-      }
-
-      function deleteZone(id) { fetch('/zones/'+id,{method:'DELETE'}).then(()=>loadZones()); }
-      document.querySelector('[data-page="zones"]').addEventListener('click',()=>setTimeout(loadZones,50));
-
-      // Webhook test
-      function testWebhook() {
-        const url = document.getElementById('webhookUrl').value.trim();
-        if (!url) return;
-        const el = document.getElementById('webhookResult');
-        el.style.display = 'block';
-        el.style.color = 'var(--text-tertiary)';
-        el.textContent = 'Sending test…';
-        fetch('/notifications/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,message:'Test alert from Vigil'})})
-          .then(r=>r.json()).then(d => {
-            el.style.color = d.success ? 'var(--green)' : 'var(--red)';
-            el.textContent = d.success ? '✓ Webhook delivered successfully' : '✗ Delivery failed — check URL';
-          }).catch(()=>{el.style.color='var(--red)';el.textContent='✗ Request failed';});
-      }
-
-      // Heatmap rendering
-      function loadHeatmap() {
-        fetch('/heatmap').then(r=>r.json()).then(data => {
-          const canvas = document.getElementById('heatmapCanvas');
-          if (!canvas) return;
-          const ctx = canvas.getContext('2d');
-          const grid = data.grid;
-          if (!grid || !grid.length) {
-            document.getElementById('heatmapInfo').textContent = 'No heatmap data yet — detections will accumulate here';
-            return;
-          }
-          const h = grid.length;
-          const w = grid[0].length;
-          canvas.width = w * 4;
-          canvas.height = h * 4;
-          for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-              const v = grid[y][x];
-              if (v < 0.01) continue;
-              const r = Math.min(255, v * 510);
-              const g = Math.max(0, 255 - v * 400);
-              const b = Math.max(0, 100 - v * 200);
-              const a = Math.min(0.8, v * 0.9);
-              ctx.fillStyle = `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
-              ctx.fillRect(x*4, y*4, 4, 4);
-            }
-          }
-          document.getElementById('heatmapInfo').textContent = `${data.total_detections} detections accumulated • ${data.hotspots.length} hotspots identified`;
-        }).catch(()=>{});
-      }
-      document.querySelector('[data-page="analytics"]').addEventListener('click',()=>setTimeout(loadHeatmap,100));
-
-      // PWA Service Worker
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
-      }
-    </script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/vigil_logo.png">
+<title>Vigil</title>
+<style>
+:root{--bg:#0a0d12;--surface:#12161d;--card:#171c25;--card-h:#1d2330;--elevated:#222835;--sidebar:#090c10;--input:#141923;--border:rgba(255,255,255,0.05);--border-h:rgba(255,255,255,0.1);--text:#f2f4f7;--text-s:rgba(242,244,247,0.5);--text-t:rgba(242,244,247,0.28);--accent:#4f8fff;--accent-h:#3b7cf5;--accent-g:rgba(79,143,255,0.08);--green:#2dd4a0;--green-g:rgba(45,212,160,0.08);--orange:#f5a623;--orange-g:rgba(245,166,35,0.08);--red:#f56565;--red-g:rgba(245,101,101,0.08);--purple:#9f7aea;--purple-g:rgba(159,122,234,0.08);--cyan:#06b6d4;--cyan-g:rgba(6,182,212,0.08);--r:12px;--rs:8px;--font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--sw:232px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;display:flex;overflow:hidden}
+
+/* SIDEBAR */
+.sb{position:fixed;top:0;left:0;bottom:0;width:var(--sw);background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sb-brand{display:flex;align-items:center;gap:9px;padding:18px 16px 14px}
+.sb-brand img{width:26px;height:26px;border-radius:6px}
+.sb-brand span{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.sb-brand .pro{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 5px;border-radius:3px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;margin-left:3px}
+.sb-section{padding:10px 10px 2px}
+.sb-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-t);padding:0 6px 5px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--text-s);cursor:pointer;transition:.15s}
+.ni:hover{background:rgba(255,255,255,0.03);color:var(--text)}
+.ni.a{background:var(--accent-g);color:var(--accent)}
+.ni svg{width:15px;height:15px;opacity:.4;flex-shrink:0}
+.ni.a svg{opacity:1}
+.ni .badge{margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--accent-g);color:var(--accent)}
+.ni .tag{margin-left:auto;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:1px 4px;border-radius:3px}
+.tag-new{background:var(--green-g);color:var(--green)}
+.tag-ai{background:var(--purple-g);color:var(--purple)}
+.tag-beta{background:var(--orange-g);color:var(--orange)}
+.sb-foot{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
+.sb-foot .status{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-t)}
+.sb-foot .dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page{display:none;animation:fadeIn .2s}
+.page.a{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{padding:20px 28px 0;display:flex;align-items:flex-end;justify-content:space-between}
+.ph h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.ph .sub{font-size:12px;color:var(--text-t);margin-top:1px}
+.pb{padding:18px 28px 40px}
+
+/* CARDS & STATS */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:20px}
+.sc{padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);transition:.15s;position:relative;overflow:hidden}
+.sc:hover{border-color:var(--border-h)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;opacity:0;transition:.15s}
+.sc:hover::before{opacity:1}
+.sc.green::before{background:var(--green)}.sc.blue::before{background:var(--accent)}.sc.orange::before{background:var(--orange)}.sc.purple::before{background:var(--purple)}.sc.cyan::before{background:var(--cyan)}
+.sc .sv{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.sc .sl{font-size:9.5px;color:var(--text-t);text-transform:uppercase;letter-spacing:.05em;margin-top:5px}
+.sc .st{font-size:10px;color:var(--green);margin-top:4px}
+
+/* MODULES */
+.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:18px}
+.mc{padding:16px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:.15s;position:relative}
+.mc:hover{border-color:var(--border-h);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.mc h3{font-size:14px;font-weight:600;margin:10px 0 3px}
+.mc p{font-size:11px;color:var(--text-t);line-height:1.4}
+.mc .mt{position:absolute;top:12px;right:12px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:3px}
+.mt-on{background:var(--green-g);color:var(--green)}.mt-soon{background:var(--orange-g);color:var(--orange)}
+.mc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+
+/* GENERIC */
+.inp{padding:8px 12px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;transition:.15s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-g)}
+.inp::placeholder{color:var(--text-t)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;font-size:12px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:99px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--accent-h);box-shadow:0 3px 12px var(--accent-g)}
+.btn-s{background:var(--card);color:var(--text-s);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--border-h);color:var(--text)}
+.empty{text-align:center;padding:40px;color:var(--text-t);font-size:12px}
+
+/* GRID */
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:14px}
+.rc{overflow:hidden;border-radius:var(--r);background:var(--card);border:1px solid var(--border);transition:.15s}
+.rc:hover{border-color:var(--border-h);transform:translateY(-1px)}
+.rc img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:var(--elevated)}
+.rc .rb{padding:8px 10px}
+.rc .rb h4{font-size:11px;font-weight:600;margin-bottom:2px}
+.rc .rb p{font-size:10px;color:var(--text-t)}
+.dt{display:inline-block;font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600;margin:2px 2px 0 0}
+.dt-p{background:var(--green-g);color:var(--green)}.dt-v{background:var(--accent-g);color:var(--accent)}.dt-a{background:var(--orange-g);color:var(--orange)}
+
+/* SEARCH */
+.ai-box{max-width:580px;position:relative;margin-bottom:10px}
+.ai-box input{width:100%;padding:12px 16px 12px 40px;font-size:14px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;transition:.15s}
+.ai-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g),0 4px 16px rgba(0,0,0,.2)}
+.ai-box input::placeholder{color:var(--text-t)}
+.ai-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:4px 10px;font-size:10px;font-weight:600;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text-s);cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-g)}
+
+/* TIMELINE */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border)}
+.ti{position:relative;margin-bottom:10px}
+.ti .td{position:absolute;left:-20px;top:12px;width:8px;height:8px;border-radius:50%;border:2px solid var(--bg)}
+.td-g{background:var(--green);box-shadow:0 0 5px rgba(45,212,160,.3)}.td-o{background:var(--orange);box-shadow:0 0 5px rgba(245,166,35,.3)}.td-b{background:var(--accent);box-shadow:0 0 5px rgba(79,143,255,.3)}
+.tc{display:flex;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);transition:.15s}
+.tc:hover{border-color:var(--border-h)}
+.tc img{width:60px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--elevated)}
+.tc-info{flex:1;min-width:0}
+.tc-title{font-size:12px;font-weight:600}
+.tc-desc{font-size:10px;color:var(--text-s);margin-top:1px}
+.tc-time{font-size:9px;color:var(--text-t);margin-top:3px}
+
+/* ZONES */
+.zone-tb{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.zone-wrap{display:grid;grid-template-columns:1fr 260px;gap:12px}
+.zone-canvas{width:100%;aspect-ratio:16/9;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:crosshair}
+.zone-list{display:flex;flex-direction:column;gap:6px}
+.zi{padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)}
+.zi h4{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.zi p{font-size:10px;color:var(--text-t);margin-top:2px}
+.zi .zd{width:7px;height:7px;border-radius:50%}
+
+/* ALERTS */
+.rule{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px}
+.rule:hover{border-color:var(--border-h)}
+.rule-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rule-info{flex:1}.rule-name{font-size:12px;font-weight:600}.rule-desc{font-size:10px;color:var(--text-t)}
+.rule-st{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--green-g);color:var(--green)}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sb{width:100%;height:56px;top:auto;bottom:0;left:0;right:0;flex-direction:row;border-right:none;border-top:1px solid var(--border);padding:0 8px;overflow-x:auto;overflow-y:hidden}
+  .sb-brand,.sb-label,.sb-foot,.ni span,.ni .badge,.ni .tag,.sb-section{display:none}
+  .sb .mobile-nav{display:flex;align-items:center;gap:4px;height:100%;padding:0 4px}
+  .ni{padding:10px 12px;border-radius:10px;flex-shrink:0}
+  .ni svg{width:20px;height:20px}
+  .main{margin-left:0;margin-bottom:56px;height:calc(100dvh - 56px)}
+  .ph{padding:14px 16px 0}.pb{padding:12px 16px 24px}
+  .sg{grid-template-columns:repeat(2,1fr)}.mg{grid-template-columns:1fr}
+  .rg{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .zone-wrap{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<aside class="sb">
+  <div class="sb-brand"><img src="/static/vigil_logo.png" alt="V"><span>Vigil</span><span class="pro">PRO</span></div>
+  <div class="sb-section"><div class="sb-label">Overview</div>
+    <div class="ni a" onclick="nav('dash')" data-p="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
+    <div class="ni" onclick="nav('analytics')" data-p="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span><span class="tag tag-new">New</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Monitor</div>
+    <div class="ni" onclick="nav('live')" data-p="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Live View</span></div>
+    <div class="ni" onclick="nav('cameras')" data-p="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Cameras</span><span class="badge">{{ cameras|length }}</span></div>
+    <div class="ni" onclick="nav('zones')" data-p="zones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg><span>Zones</span><span class="tag tag-beta">Beta</span></div>
+    <div class="ni" onclick="nav('detect')" data-p="detect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Detections</span><span class="badge">{{ events|length }}</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Intelligence</div>
+    <div class="ni" onclick="nav('ask')" data-p="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Ask Vigil</span><span class="tag tag-ai">AI</span></div>
+    <div class="ni" onclick="nav('timeline')" data-p="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Timeline</span></div>
+    <div class="ni" onclick="nav('alerts')" data-p="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Alerts</span></div>
+    <div class="ni" onclick="nav('analyse')" data-p="analyse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span>Analyse</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Investigate</div>
+    <div class="ni" onclick="nav('cases')" data-p="cases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Cases</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">System</div>
+    <div class="ni" onclick="nav('health')" data-p="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Health</span></div>
+    <div class="ni" onclick="nav('settings')" data-p="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></div>
+  </div>
+  <div class="sb-foot"><div class="status"><span class="dot"></span>Online &middot; YOLO11m &middot; Edge</div></div>
+  <nav class="mobile-nav"></nav>
+</aside>
+
+<div class="main">
+<!-- DASHBOARD -->
+<div class="page a" id="p-dash">
+<div class="ph"><div><h1>Dashboard</h1><div class="sub">AI Video Intelligence — Real-time overview</div></div></div>
+<div class="pb">
+<div class="sg">
+<div class="sc green"><div class="sv" id="ds-p">{{ events|length }}</div><div class="sl">Detections Today</div><div class="st">↑ Live</div></div>
+<div class="sc blue"><div class="sv">{{ cameras|length }}</div><div class="sl">Cameras</div><div class="st">All online</div></div>
+<div class="sc orange"><div class="sv">0</div><div class="sl">Alerts</div></div>
+<div class="sc purple"><div class="sv">24/7</div><div class="sl">Uptime</div><div class="st">Edge AI</div></div>
+<div class="sc cyan"><div class="sv">~15ms</div><div class="sl">Inference</div><div class="st">YOLO11m</div></div>
+</div>
+<div class="sb-label" style="padding:8px 0">MODULES</div>
+<div class="mg">
+<div class="mc" onclick="nav('detect')"><div class="mc-icon" style="background:var(--green-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span class="mt mt-on">Active</span><h3>Security</h3><p>Intrusion detection, perimeter alerts, after-hours monitoring</p></div>
+<div class="mc" onclick="nav('analytics')"><div class="mc-icon" style="background:var(--accent-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><span class="mt mt-on">Active</span><h3>Retail Analytics</h3><p>Footfall counting, heatmaps, dwell time, queue detection</p></div>
+<div class="mc" onclick="nav('zones')"><div class="mc-icon" style="background:var(--orange-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><rect x="1" y="5" width="15" height="14" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><span class="mt mt-on">Active</span><h3>Warehouse & Fleet</h3><p>Speed monitoring, zone violations, vehicle tracking, PPE</p></div>
+<div class="mc"><div class="mc-icon" style="background:var(--purple-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="mt mt-on">Active</span><h3>Events & Logistics</h3><p>Load-in timing, bay occupancy, truck counting, crew tracking</p></div>
+<div class="mc"><div class="mc-icon" style="background:var(--cyan-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><span class="mt mt-on">Active</span><h3>Leisure & Sports</h3><p>Visitor counting, peak hours, after-hours security, usage reports</p></div>
+<div class="mc"><div class="mc-icon" style="background:var(--red-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="mt mt-soon">Soon</span><h3>License Plates</h3><p>ANPR, vehicle logging, access control, automatic gate triggers</p></div>
+</div>
+</div>
+</div>
+
+<!-- ASK VIGIL -->
+<div class="page" id="p-ask">
+<div class="ph"><div><h1>Ask Vigil</h1><div class="sub">Natural language search across all cameras</div></div></div>
+<div class="pb">
+<div class="ai-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="sq" placeholder='Try: "Show me the fox last night" or "Vehicles this week"' oninput="dSearch()" onkeydown="if(event.key==='Enter')doSearch()"></div>
+<div class="chips"><span class="chip" onclick="qSearch('Show me all people')">Show me all people</span><span class="chip" onclick="qSearch('Animals last night')">Animals last night</span><span class="chip" onclick="qSearch('Vehicles high confidence')">Vehicles high confidence</span></div>
+<div id="sr-info" style="font-size:11px;color:var(--text-t);margin-bottom:10px"></div>
+<div class="rg" id="sr"></div>
+</div>
+</div>
+
+<!-- TIMELINE -->
+<div class="page" id="p-timeline">
+<div class="ph"><div><h1>Timeline</h1><div class="sub">Chronological activity feed</div></div></div>
+<div class="pb">
+<div class="tl">
+{% for event in events[:25] %}
+<div class="ti"><div class="td td-g"></div><div class="tc"><img src="/snapshots/{{ event.snapshot_filename }}" loading="lazy"><div class="tc-info"><div class="tc-title">{{ event.event_type|replace('_',' ')|title }}</div><div class="tc-desc">{{ event.labels_detected|join(', ') }} &middot; {{ event.camera_name }} &middot; {{ "%.0f%%"|format(event.confidence*100) }}</div><div class="tc-time">{{ event.timestamp }}</div></div></div></div>
+{% endfor %}
+{% if not events %}<div class="empty">No activity yet</div>{% endif %}
+</div>
+</div>
+</div>
+
+<!-- DETECTIONS -->
+<div class="page" id="p-detect">
+<div class="ph"><div><h1>Detections</h1><div class="sub">All events from connected cameras</div></div><div style="display:flex;gap:5px"><a href="/export/csv" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ CSV</a><a href="/export/json" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ JSON</a></div></div>
+<div class="pb">
+{% if events %}<div class="rg">{% for e in events[:30] %}<div class="rc"><a href="/snapshots/{{ e.snapshot_filename }}"><img src="/snapshots/{{ e.snapshot_filename }}" loading="lazy"></a><div class="rb"><h4>{{ e.camera_name }} #{{ e.id }}</h4><p>{{ e.timestamp }}</p><span class="dt dt-p">{{ e.event_type }}</span></div></div>{% endfor %}</div>{% else %}<div class="empty">No detections yet</div>{% endif %}
+</div>
+</div>
+
+<!-- PLACEHOLDER PAGES -->
+<div class="page" id="p-analytics"><div class="ph"><div><h1>Analytics</h1><div class="sub">Counting, heatmaps, and traffic insights</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" id="an-p">0</div><div class="sl">People Now</div></div><div class="sc blue"><div class="sv" id="an-t">0</div><div class="sl">Today Total</div></div><div class="sc orange"><div class="sv">—</div><div class="sl">Peak Hour</div></div><div class="sc purple"><div class="sv">0</div><div class="sl">Speed Alerts</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">Footfall</div><svg width="100%" height="120" viewBox="0 0 400 120" preserveAspectRatio="none"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,100 40,85 80,70 120,55 160,65 200,40 240,50 280,30 320,35 360,20 400,25" opacity=".5"/></svg></div><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">Heatmap</div><canvas id="hm" width="128" height="96" style="width:100%;height:100px;border-radius:6px;background:var(--elevated)"></canvas></div></div></div></div>
+<div class="page" id="p-live"><div class="ph"><div><h1>Live View</h1><div class="sub">Multi-camera monitoring</div></div></div><div class="pb"><div id="lv" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px"></div></div></div>
+<div class="page" id="p-cameras"><div class="ph"><div><h1>Cameras</h1><div class="sub">Manage feeds — Hikvision, UniFi, ONVIF, Scrypted</div></div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap;max-width:600px;margin-bottom:16px"><input class="inp" id="cn" placeholder="Name" style="flex:1;min-width:100px"><input class="inp" id="cu" placeholder="RTSP URL" style="flex:2;min-width:180px"><select class="inp" id="ct"><option value="hikvision">Hikvision</option><option value="unifi_rtsps">UniFi RTSPS</option><option value="unifi_rtsp">UniFi RTSP</option><option value="dahua">Dahua/Amcrest</option><option value="reolink">Reolink</option><option value="axis">Axis</option><option value="generic_onvif">ONVIF</option><option value="scrypted">Scrypted</option></select><button class="btn" onclick="addCam()">Add</button></div><div id="cl"></div></div></div>
+<div class="page" id="p-zones"><div class="ph"><div><h1>Zones</h1><div class="sub">Detection, exclusion, counting, speed limits</div></div></div><div class="pb"><div class="zone-tb"><select class="inp" id="zt"><option value="detection">Detection</option><option value="exclusion">Exclusion</option><option value="counting_line">Counting Line</option><option value="speed_limit">Speed Limit</option></select><input class="inp" id="zn" placeholder="Zone name" style="width:140px"><input type="color" id="zc" value="#4f8fff" style="width:28px;height:28px;border:none;border-radius:5px;cursor:pointer"><button class="btn" onclick="saveZone()">Save</button><button class="btn btn-s" onclick="clearZ()">Clear</button></div><div class="zone-wrap"><canvas id="zcanvas" width="960" height="540" class="zone-canvas"></canvas><div class="zone-list" id="zl"></div></div><div style="font-size:9px;color:var(--text-t);margin-top:6px">Click to add points &middot; Double-click to close &middot; Right-click to undo</div></div></div>
+<div class="page" id="p-alerts"><div class="ph"><div><h1>Alerts</h1><div class="sub">Rules, schedules, and webhook notifications</div></div><button class="btn">+ New Rule</button></div><div class="pb"><div class="rule"><div class="rule-icon" style="background:var(--red-g);color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="rule-info"><div class="rule-name">Person in Restricted Area</div><div class="rule-desc">After hours (21:00–06:00) &middot; All cameras</div></div><div class="rule-st">Active</div></div><div class="rule"><div class="rule-icon" style="background:var(--orange-g);color:var(--orange)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="rule-info"><div class="rule-name">Speed Violation — Loading Bay</div><div class="rule-desc">Always &middot; Max 5mph &middot; Webhook → Slack</div></div><div class="rule-st">Active</div></div><div class="rule"><div class="rule-icon" style="background:var(--green-g);color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="rule-info"><div class="rule-name">After-Hours Motion</div><div class="rule-desc">Custom schedule (17:00–09:00 weekdays) &middot; Push + Email</div></div><div class="rule-st">Active</div></div><div style="margin-top:20px"><div style="font-size:11px;color:var(--text-t);margin-bottom:8px">Webhook Notifications</div><div style="display:flex;gap:6px;max-width:400px"><input class="inp" id="wh" placeholder="https://hooks.slack.com/..." style="flex:1;font-size:11px"><button class="btn btn-s" onclick="testWH()" style="font-size:10px">Test</button></div><div id="whr" style="font-size:10px;margin-top:4px;display:none"></div></div></div></div>
+<div class="page" id="p-analyse"><div class="ph"><div><h1>Analyse</h1><div class="sub">Upload video for instant AI detection</div></div></div><div class="pb"><div class="drop-zone" style="max-width:500px;padding:36px 24px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:center;transition:.15s;position:relative" id="dz"><input type="file" id="fi" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer"><h3 style="font-size:13px;font-weight:600;margin-bottom:3px">Drop video here</h3><p style="font-size:11px;color:var(--text-t)">MP4, MOV, AVI</p></div><div id="ap" style="display:none;margin-top:12px;font-size:12px;color:var(--text-s)">Analysing…</div><div class="rg" id="ar"></div></div></div>
+<div class="page" id="p-cases"><div class="ph"><div><h1>Cases</h1><div class="sub">Incident reports and investigations</div></div><button class="btn" onclick="document.getElementById('ncf').style.display='block'">+ New Case</button></div><div class="pb"><div id="ncf" style="display:none;max-width:420px;margin-bottom:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"><input class="inp" id="cti" placeholder="Case title" style="width:100%;margin-bottom:6px"><textarea class="inp" id="cde" placeholder="Description" style="width:100%;height:60px;resize:vertical;margin-bottom:8px"></textarea><div style="display:flex;gap:6px"><button class="btn" onclick="mkCase()">Create</button><button class="btn btn-s" onclick="document.getElementById('ncf').style.display='none'">Cancel</button></div></div><div id="csl"></div></div></div>
+<div class="page" id="p-health"><div class="ph"><div><h1>System Health</h1><div class="sub">Processing status and resources</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" style="color:var(--green)">Online</div><div class="sl">Status</div></div><div class="sc blue"><div class="sv">YOLO11m</div><div class="sl">Model</div></div><div class="sc purple"><div class="sv" id="he">—</div><div class="sl">Events</div></div><div class="sc orange"><div class="sv" id="hs">—</div><div class="sl">Snapshots</div></div><div class="sc cyan"><div class="sv" id="hp">0</div><div class="sl">Pipelines</div></div></div><div id="hd" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:400px"></div></div></div>
+<div class="page" id="p-settings"><div class="ph"><div><h1>Settings</h1><div class="sub">Thresholds, model, storage</div></div></div><div class="pb"><div style="max-width:440px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Detection Thresholds</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">People</span><input type="range" min="10" max="90" value="45" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">45%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">30%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">25%</span></div></div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Supported Cameras</div><div style="font-size:12px;color:var(--text-s);line-height:1.8;margin-bottom:24px">Hikvision &middot; UniFi Protect (RTSPS/RTSP) &middot; Dahua/Amcrest &middot; Reolink &middot; Axis &middot; ONVIF &middot; Scrypted (HomeKit/Ring/Nest)</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Storage</div><button class="btn btn-s" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Up Old Events</button></div></div></div>
+</div>
+
+<script>
+function nav(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('a'));document.querySelectorAll('.ni').forEach(x=>x.classList.remove('a'));const el=document.getElementById('p-'+p);if(el)el.classList.add('a');const ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('a');}
+
+// Stats
+fetch('/stats').then(r=>r.json()).then(d=>{document.getElementById('an-t').textContent=d.total_events||0;}).catch(()=>{});
+
+// Search
+let sTO;function dSearch(){clearTimeout(sTO);sTO=setTimeout(doSearch,350)}
+function qSearch(t){document.getElementById('sq').value=t;doSearch()}
+function doSearch(){const q=document.getElementById('sq').value.trim();if(!q){document.getElementById('sr').innerHTML='';document.getElementById('sr-info').textContent='';return}
+fetch('/events/search?q='+encodeURIComponent(q)+'&limit=30').then(r=>r.json()).then(d=>{document.getElementById('sr-info').textContent=d.count+' results';document.getElementById('sr').innerHTML=d.results.map((e,i)=>{const desc=d.descriptions&&d.descriptions[i]?d.descriptions[i]:e.camera_name;return`<div class="rc"><a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"></a><div class="rb"><h4>${desc}</h4><p>${e.timestamp}</p></div></div>`}).join('')})}
+
+// Cameras
+function loadCams(){fetch('/cameras').then(r=>r.json()).then(c=>{const el=document.getElementById('cl');if(!c.length){el.innerHTML='<div class="empty">No cameras. Add one above.</div>';return}el.innerHTML=c.map(x=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px"><div style="flex:1"><div style="font-size:12px;font-weight:600">${x.name}</div><div style="font-size:10px;color:var(--text-t);word-break:break-all">${x.url}</div></div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--accent-g);color:var(--accent);text-transform:uppercase">${x.type}</span><button onclick="delCam('${x.id}')" style="font-size:10px;color:var(--text-t);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer">×</button></div>`).join('')})}
+function addCam(){const n=document.getElementById('cn').value.trim(),u=document.getElementById('cu').value.trim(),t=document.getElementById('ct').value;if(!n||!u)return;fetch('/cameras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,url:u,type:t})}).then(()=>{document.getElementById('cn').value='';document.getElementById('cu').value='';loadCams()})}
+function delCam(id){fetch('/cameras/'+id,{method:'DELETE'}).then(()=>loadCams())}
+loadCams();
+
+// Live
+document.querySelector('[data-p="live"]').addEventListener('click',()=>{fetch('/cameras').then(r=>r.json()).then(c=>{const el=document.getElementById('lv');if(!c.length){el.innerHTML='<div class="empty">No cameras configured</div>';return}el.innerHTML=c.map(x=>x.type.includes('unifi')?`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><iframe src="${x.url}" style="width:100%;aspect-ratio:16/9;border:none" allow="autoplay;fullscreen;encrypted-media" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" loading="lazy"></iframe><div style="padding:8px 10px;font-size:11px;font-weight:600;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--green)"></span>${x.name}</div></div>`:`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center"><div><div style="font-size:12px;font-weight:600">${x.name}</div><div style="font-size:10px;color:var(--text-t);margin-top:4px">RTSP Processing</div></div></div>`).join('')})});
+
+// Zones
+let zPts=[],zSaved=[];const zC=document.getElementById('zcanvas'),zCtx=zC?zC.getContext('2d'):null;
+if(zC){zC.addEventListener('click',e=>{const r=zC.getBoundingClientRect();zPts.push({x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height});drawZ()});zC.addEventListener('dblclick',e=>{e.preventDefault();if(zPts.length>=3)saveZone()});zC.addEventListener('contextmenu',e=>{e.preventDefault();zPts.pop();drawZ()})}
+function drawZ(){if(!zCtx)return;const w=zC.width,h=zC.height;zCtx.clearRect(0,0,w,h);zSaved.forEach(z=>{if(z.points.length<2)return;zCtx.beginPath();zCtx.moveTo(z.points[0].x*w,z.points[0].y*h);z.points.slice(1).forEach(p=>zCtx.lineTo(p.x*w,p.y*h));zCtx.closePath();zCtx.fillStyle=z.color+'18';zCtx.fill();zCtx.strokeStyle=z.color;zCtx.lineWidth=2;zCtx.stroke();zCtx.fillStyle=z.color;zCtx.font='11px sans-serif';zCtx.fillText(z.name,z.points[0].x*w+3,z.points[0].y*h+12)});if(zPts.length){const c=document.getElementById('zc').value;zCtx.beginPath();zCtx.moveTo(zPts[0].x*zC.width,zPts[0].y*zC.height);zPts.slice(1).forEach(p=>zCtx.lineTo(p.x*zC.width,p.y*zC.height));zCtx.strokeStyle=c;zCtx.lineWidth=2;zCtx.setLineDash([4,4]);zCtx.stroke();zCtx.setLineDash([]);zPts.forEach(p=>{zCtx.beginPath();zCtx.arc(p.x*zC.width,p.y*zC.height,3,0,Math.PI*2);zCtx.fillStyle=c;zCtx.fill()})}}
+function saveZone(){if(zPts.length<3)return;const n=document.getElementById('zn').value.trim()||'Zone '+(zSaved.length+1);fetch('/zones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,zone_type:document.getElementById('zt').value,points:zPts,color:document.getElementById('zc').value,config:{},camera_id:'',enabled:true})}).then(r=>r.json()).then(()=>{zPts=[];document.getElementById('zn').value='';loadZ()})}
+function clearZ(){zPts=[];drawZ()}
+function loadZ(){fetch('/zones').then(r=>r.json()).then(z=>{zSaved=z;drawZ();document.getElementById('zl').innerHTML=z.length?z.map(x=>`<div class="zi"><h4><span class="zd" style="background:${x.color}"></span>${x.name}</h4><p>${x.zone_type} &middot; ${x.points.length} pts</p></div>`).join(''):'<div style="font-size:10px;color:var(--text-t);padding:12px">No zones. Draw on canvas.</div>'})}
+document.querySelector('[data-p="zones"]').addEventListener('click',()=>setTimeout(loadZ,50));
+
+// Analyse
+const dz=document.getElementById('dz'),fi=document.getElementById('fi');
+['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.style.borderColor='var(--accent)'}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.style.borderColor=''}));
+dz.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])upload(ev.dataTransfer.files[0])});
+fi.addEventListener('change',()=>{if(fi.files[0])upload(fi.files[0])});
+function upload(f){document.getElementById('ap').style.display='block';document.getElementById('ar').innerHTML='';const fd=new FormData();fd.append('video',f);fd.append('people_threshold','0.45');fd.append('vehicles_threshold','0.30');fd.append('animals_threshold','0.25');fd.append('detect_people','true');fd.append('detect_vehicles','true');fd.append('detect_animals','true');fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{document.getElementById('ap').style.display='none';document.getElementById('ar').innerHTML=d.frames.filter(f=>f.detections.length).map(f=>`<div class="rc"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy"><div class="rb"><h4>Frame ${f.frame_number}</h4>${f.detections.map(x=>`<span class="dt dt-${x.category==='people'?'p':x.category==='vehicles'?'v':'a'}">${x.label} ${(x.confidence*100).toFixed(0)}%</span>`).join('')}</div></div>`).join('')}).catch(()=>{document.getElementById('ap').style.display='none'})}
+
+// Cases
+function mkCase(){const t=document.getElementById('cti').value.trim(),d=document.getElementById('cde').value.trim();if(!t)return;fetch('/cases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:d,event_ids:[]})}).then(()=>{document.getElementById('cti').value='';document.getElementById('cde').value='';document.getElementById('ncf').style.display='none';loadC()})}
+function loadC(){fetch('/cases').then(r=>r.json()).then(c=>{document.getElementById('csl').innerHTML=c.length?c.map(x=>`<div class="rule"><div class="rule-icon" style="background:var(--accent-g);color:var(--accent)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="rule-info"><div class="rule-name">${x.title}</div><div class="rule-desc">${x.description||'No description'} &middot; ${x.event_ids.length} events</div></div><div class="rule-st">${x.status}</div></div>`).join(''):'<div class="empty">No cases yet</div>'})}
+document.querySelector('[data-p="cases"]').addEventListener('click',()=>setTimeout(loadC,50));
+
+// Health
+document.querySelector('[data-p="health"]').addEventListener('click',()=>{fetch('/system/health').then(r=>r.json()).then(d=>{document.getElementById('he').textContent=d.total_events;document.getElementById('hs').textContent=d.snapshots_count;document.getElementById('hp').textContent=d.active_pipelines;document.getElementById('hd').innerHTML=`<div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Database</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.database_size_mb} MB</div></div><div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Snapshots</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.snapshots_size_mb} MB</div></div>`})});
+
+// Webhook
+function testWH(){const u=document.getElementById('wh').value.trim();if(!u)return;const r=document.getElementById('whr');r.style.display='block';r.style.color='var(--text-t)';r.textContent='Sending…';fetch('/notifications/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}).then(x=>x.json()).then(d=>{r.style.color=d.success?'var(--green)':'var(--red)';r.textContent=d.success?'✓ Delivered':'✗ Failed'})}
+
+// PWA
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+
+// Auto-refresh dashboard
+setInterval(()=>{if(document.getElementById('p-dash').classList.contains('a')){fetch('/stats').then(r=>r.json()).then(d=>{document.getElementById('ds-p').textContent=d.total_events||0}).catch(()=>{})}},5000);
+</script>
+</body>
 </html>
