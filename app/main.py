@@ -20,9 +20,15 @@ from pydantic import BaseModel
 
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
 from app.camera.discovery import build_rtsp_url, get_presets_list
+from app.copilot import generate_daily_summary, generate_weekly_summary, get_recommendations
 from app.export import events_to_csv, events_to_json_export, generate_case_report
+from app.lpr import (
+    add_known_plate, get_plate_stats, load_plate_log, load_plates_db,
+    log_plate_sighting, normalise_plate, remove_known_plate,
+)
 from app.notifications import get_notification_log, send_slack, send_webhook
 from app.scheduling import get_schedule_presets, is_within_schedule
+from app.training import add_correction, build_yolo_dataset, get_training_command, get_training_stats
 from app.tracking import HeatmapAccumulator
 from app.zones import load_zones, save_zones
 from app.camera.pipeline import CameraConfig, PipelineManager
@@ -814,6 +820,102 @@ def export_case_report(request: Request, case_id: str) -> Any:
         media_type="text/markdown",
         headers={"Content-Disposition": f"attachment; filename=case_{case_id}_report.md"},
     )
+
+
+class PlateInput(BaseModel):
+    plate_number: str
+    owner: str = ""
+    group: str = "whitelist"
+    notes: str = ""
+    vehicle_description: str = ""
+
+
+@app.get("/lpr/plates")
+def list_plates() -> dict[str, Any]:
+    """Get all known plates and stats."""
+    return {**load_plates_db(), "stats": get_plate_stats()}
+
+
+@app.post("/lpr/plates")
+def add_plate(data: PlateInput) -> dict[str, Any]:
+    """Add or update a known plate."""
+    return add_known_plate(
+        data.plate_number, data.owner, data.group, data.notes, data.vehicle_description
+    )
+
+
+@app.delete("/lpr/plates/{plate_number}")
+def delete_plate(plate_number: str) -> dict[str, Any]:
+    success = remove_known_plate(plate_number)
+    if not success:
+        raise HTTPException(status_code=404, detail="Plate not found")
+    return {"status": "deleted"}
+
+
+@app.get("/lpr/log")
+def plate_log(limit: int = Query(default=100)) -> list[dict[str, Any]]:
+    """Get recent plate sightings."""
+    log = load_plate_log()
+    return log[-limit:][::-1]
+
+
+@app.get("/lpr/stats")
+def lpr_stats() -> dict[str, Any]:
+    return get_plate_stats()
+
+
+class CorrectionInput(BaseModel):
+    event_id: int
+    snapshot_path: str
+    original_label: str
+    correct_label: str
+    bbox: list[int]
+
+
+@app.post("/training/correct")
+def submit_correction(data: CorrectionInput) -> dict[str, Any]:
+    """Submit a label correction for model training."""
+    return add_correction(
+        data.event_id, data.snapshot_path, data.original_label, data.correct_label, data.bbox
+    )
+
+
+@app.get("/training/stats")
+def training_stats() -> dict[str, Any]:
+    return get_training_stats()
+
+
+@app.post("/training/build-dataset")
+def build_dataset() -> dict[str, Any]:
+    """Build YOLO training dataset from corrections."""
+    return build_yolo_dataset()
+
+
+@app.get("/training/command")
+def training_command() -> dict[str, str]:
+    """Get the command to run fine-tuning on Mac Mini."""
+    return get_training_command()
+
+
+@app.get("/copilot/daily")
+def daily_summary(request: Request) -> dict[str, Any]:
+    """AI-generated daily activity summary."""
+    event_store: EventStore = request.app.state.event_store
+    return generate_daily_summary(event_store)
+
+
+@app.get("/copilot/weekly")
+def weekly_summary(request: Request) -> dict[str, Any]:
+    """AI-generated weekly summary with trends."""
+    event_store: EventStore = request.app.state.event_store
+    return generate_weekly_summary(event_store)
+
+
+@app.get("/copilot/recommendations")
+def recommendations(request: Request) -> list[dict[str, Any]]:
+    """AI-generated recommendations based on patterns."""
+    event_store: EventStore = request.app.state.event_store
+    return get_recommendations(event_store)
 
 
 @app.get("/cameras/presets")

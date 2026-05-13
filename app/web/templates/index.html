@@ -156,6 +156,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
     <div class="ni" onclick="nav('cameras')" data-p="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Cameras</span><span class="badge">{{ cameras|length }}</span></div>
     <div class="ni" onclick="nav('zones')" data-p="zones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg><span>Zones</span><span class="tag tag-beta">Beta</span></div>
     <div class="ni" onclick="nav('detect')" data-p="detect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Detections</span><span class="badge">{{ events|length }}</span></div>
+    <div class="ni" onclick="nav('lpr')" data-p="lpr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="6" y2="12.01"/><line x1="18" y1="12" x2="18" y2="12.01"/></svg><span>Plates</span><span class="tag tag-new">LPR</span></div>
   </div>
   <div class="sb-section"><div class="sb-label">Intelligence</div>
     <div class="ni" onclick="nav('ask')" data-p="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Ask Vigil</span><span class="tag tag-ai">AI</span></div>
@@ -193,7 +194,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <div class="mc" onclick="nav('zones')"><div class="mc-icon" style="background:var(--orange-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><rect x="1" y="5" width="15" height="14" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><span class="mt mt-on">Active</span><h3>Warehouse & Fleet</h3><p>Speed monitoring, zone violations, vehicle tracking, PPE</p></div>
 <div class="mc"><div class="mc-icon" style="background:var(--purple-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="mt mt-on">Active</span><h3>Events & Logistics</h3><p>Load-in timing, bay occupancy, truck counting, crew tracking</p></div>
 <div class="mc"><div class="mc-icon" style="background:var(--cyan-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><span class="mt mt-on">Active</span><h3>Leisure & Sports</h3><p>Visitor counting, peak hours, after-hours security, usage reports</p></div>
-<div class="mc"><div class="mc-icon" style="background:var(--red-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="mt mt-soon">Soon</span><h3>License Plates</h3><p>ANPR, vehicle logging, access control, automatic gate triggers</p></div>
+<div class="mc" onclick="nav('lpr')"><div class="mc-icon" style="background:var(--red-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="mt mt-on">Active</span><h3>License Plates</h3><p>ANPR, plate database, whitelist/blacklist, access control</p></div>
 </div>
 </div>
 </div>
@@ -227,6 +228,35 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <div class="ph"><div><h1>Detections</h1><div class="sub">All events from connected cameras</div></div><div style="display:flex;gap:5px"><a href="/export/csv" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ CSV</a><a href="/export/json" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ JSON</a></div></div>
 <div class="pb">
 {% if events %}<div class="rg">{% for e in events[:30] %}<div class="rc"><a href="/snapshots/{{ e.snapshot_filename }}"><img src="/snapshots/{{ e.snapshot_filename }}" loading="lazy"></a><div class="rb"><h4>{{ e.camera_name }} #{{ e.id }}</h4><p>{{ e.timestamp }}</p><span class="dt dt-p">{{ e.event_type }}</span></div></div>{% endfor %}</div>{% else %}<div class="empty">No detections yet</div>{% endif %}
+</div>
+</div>
+
+<!-- LPR / PLATES -->
+<div class="page" id="p-lpr">
+<div class="ph"><div><h1>License Plates</h1><div class="sub">ANPR database, plate tracking, and access control</div></div></div>
+<div class="pb">
+<div class="sg" id="lpr-stats">
+<div class="sc green"><div class="sv" id="lpr-known">0</div><div class="sl">Known Plates</div></div>
+<div class="sc blue"><div class="sv" id="lpr-sightings">0</div><div class="sl">Total Sightings</div></div>
+<div class="sc orange"><div class="sv" id="lpr-unknown">0</div><div class="sl">Unknown Recent</div></div>
+</div>
+
+<div style="margin-bottom:20px">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Add Known Plate</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;max-width:640px">
+<input class="inp" id="lpr-plate" placeholder="Plate (e.g. AB12 CDE)" style="width:130px;text-transform:uppercase">
+<input class="inp" id="lpr-owner" placeholder="Owner name" style="flex:1;min-width:120px">
+<select class="inp" id="lpr-group"><option value="whitelist">Whitelist</option><option value="blacklist">Blacklist</option><option value="staff">Staff</option><option value="visitor">Visitor</option><option value="vip">VIP</option></select>
+<input class="inp" id="lpr-vehicle" placeholder="Vehicle (e.g. Blue BMW 3 Series)" style="flex:1;min-width:140px">
+<button class="btn" onclick="addPlate()">Add</button>
+</div>
+</div>
+
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Database</div>
+<div id="lpr-list"></div>
+
+<div style="margin-top:24px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Recent Sightings</div>
+<div id="lpr-log"></div>
 </div>
 </div>
 
@@ -287,6 +317,36 @@ document.querySelector('[data-p="cases"]').addEventListener('click',()=>setTimeo
 
 // Health
 document.querySelector('[data-p="health"]').addEventListener('click',()=>{fetch('/system/health').then(r=>r.json()).then(d=>{document.getElementById('he').textContent=d.total_events;document.getElementById('hs').textContent=d.snapshots_count;document.getElementById('hp').textContent=d.active_pipelines;document.getElementById('hd').innerHTML=`<div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Database</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.database_size_mb} MB</div></div><div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Snapshots</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.snapshots_size_mb} MB</div></div>`})});
+
+// LPR
+function loadLPR(){
+  fetch('/lpr/plates').then(r=>r.json()).then(d=>{
+    const stats=d.stats||{};
+    document.getElementById('lpr-known').textContent=stats.total_known_plates||0;
+    document.getElementById('lpr-sightings').textContent=stats.total_sightings||0;
+    document.getElementById('lpr-unknown').textContent=stats.recent_unknown_count||0;
+    const plates=d.plates||[];
+    document.getElementById('lpr-list').innerHTML=plates.length?plates.map(p=>{
+      const gc={'whitelist':'var(--green)','blacklist':'var(--red)','staff':'var(--accent)','visitor':'var(--orange)','vip':'var(--purple)'};
+      const color=gc[p.group]||'var(--text-s)';
+      return`<div class="rule"><div class="rule-icon" style="background:${color}15;color:${color}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div><div class="rule-info"><div class="rule-name" style="font-family:monospace;letter-spacing:.1em">${p.plate}</div><div class="rule-desc">${p.owner||'Unknown'} &middot; ${p.vehicle||''} &middot; Seen ${p.seen_count||0}x${p.last_seen?' &middot; Last: '+p.last_seen.slice(0,10):''}</div></div><div style="font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:${color}15;color:${color}">${p.group}</div></div>`
+    }).join(''):'<div class="empty">No plates in database. Add one above.</div>';
+  });
+  fetch('/lpr/log?limit=20').then(r=>r.json()).then(log=>{
+    document.getElementById('lpr-log').innerHTML=log.length?log.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px"><span style="font-family:monospace;font-size:13px;font-weight:700;letter-spacing:.1em;min-width:80px">${e.plate}</span><span style="flex:1;font-size:10px;color:var(--text-t)">${e.camera} &middot; ${e.timestamp.slice(0,19)}</span><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:${e.known?'var(--green-g)':'var(--red-g)'};color:${e.known?'var(--green)':'var(--red)'}">${e.known?e.group:'UNKNOWN'}</span></div>`).join(''):'<div class="empty">No plate sightings yet</div>';
+  });
+}
+function addPlate(){
+  const plate=document.getElementById('lpr-plate').value.trim();
+  const owner=document.getElementById('lpr-owner').value.trim();
+  const group=document.getElementById('lpr-group').value;
+  const vehicle=document.getElementById('lpr-vehicle').value.trim();
+  if(!plate)return;
+  fetch('/lpr/plates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate_number:plate,owner,group,vehicle_description:vehicle})}).then(()=>{
+    document.getElementById('lpr-plate').value='';document.getElementById('lpr-owner').value='';document.getElementById('lpr-vehicle').value='';loadLPR();
+  });
+}
+document.querySelector('[data-p="lpr"]').addEventListener('click',()=>setTimeout(loadLPR,50));
 
 // Webhook
 function testWH(){const u=document.getElementById('wh').value.trim();if(!u)return;const r=document.getElementById('whr');r.style.display='block';r.style.color='var(--text-t)';r.textContent='Sending…';fetch('/notifications/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}).then(x=>x.json()).then(d=>{r.style.color=d.success?'var(--green)':'var(--red)';r.textContent=d.success?'✓ Delivered':'✗ Failed'})}

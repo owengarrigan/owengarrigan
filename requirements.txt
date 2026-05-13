@@ -8,3 +8,4 @@ opencv-python
 ultralytics
 numpy
 httpx
+easyocr
