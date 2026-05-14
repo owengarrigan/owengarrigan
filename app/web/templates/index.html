@@ -172,6 +172,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <body>
 <aside class="sb">
   <div class="sb-brand"><img src="/static/vigil_logo.png" alt="V"><span>Vigil</span><span class="pro">PRO</span></div>
+  <div class="sb-section"><div class="sb-label">Monitoring</div>
+    <div class="ni" onclick="nav('monitor')" data-p="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Station</span><span class="tag tag-new">Pro</span></div>
+  </div>
   <div class="sb-section"><div class="sb-label">Overview</div>
     <div class="ni a" onclick="nav('dash')" data-p="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
     <div class="ni" onclick="nav('analytics')" data-p="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span><span class="tag tag-new">New</span></div>
@@ -201,6 +204,35 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 </aside>
 
 <div class="main">
+<!-- MONITORING STATION -->
+<div class="page" id="p-monitor">
+<div class="ph"><div><h1>Monitoring Station</h1><div class="sub">Professional alarm monitoring — all sites, real-time</div></div></div>
+<div class="pb">
+<div class="sg">
+<div class="sc red" style="--border:rgba(245,101,101,.2)"><div class="sv" id="mon-critical" style="color:var(--red)">0</div><div class="sl">Critical</div></div>
+<div class="sc orange"><div class="sv" id="mon-high" style="color:var(--orange)">0</div><div class="sl">High Priority</div></div>
+<div class="sc blue"><div class="sv" id="mon-pending">0</div><div class="sl">Pending</div></div>
+<div class="sc green"><div class="sv" id="mon-sites">0</div><div class="sl">Sites Armed</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:14px;margin-top:16px">
+<div>
+<div style="font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+<span>Event Queue</span>
+<span style="font-size:10px;color:var(--text-t)">Sorted by priority</span>
+</div>
+<div id="mon-queue"></div>
+</div>
+<div>
+<div style="font-size:12px;font-weight:700;margin-bottom:10px">Site Status</div>
+<div id="mon-sites-list"></div>
+<div style="margin-top:16px;font-size:12px;font-weight:700;margin-bottom:10px">Audit Trail</div>
+<div id="mon-audit" style="max-height:200px;overflow-y:auto"></div>
+</div>
+</div>
+</div>
+</div>
+
 <!-- DASHBOARD -->
 <div class="page a" id="p-dash">
 <div class="ph"><div><h1>Dashboard</h1><div class="sub">AI Video Intelligence — Real-time overview</div></div></div>
@@ -365,6 +397,40 @@ document.querySelector('[data-p="cases"]').addEventListener('click',()=>setTimeo
 
 // Health
 document.querySelector('[data-p="health"]').addEventListener('click',()=>{fetch('/system/health').then(r=>r.json()).then(d=>{document.getElementById('he').textContent=d.total_events;document.getElementById('hs').textContent=d.snapshots_count;document.getElementById('hp').textContent=d.active_pipelines;document.getElementById('hd').innerHTML=`<div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Database</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.database_size_mb} MB</div></div><div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Snapshots</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.snapshots_size_mb} MB</div></div>`})});
+
+// Monitoring Station
+function loadMonitor(){
+  fetch('/monitoring').then(r=>r.json()).then(d=>{
+    document.getElementById('mon-critical').textContent=d.critical_count||0;
+    document.getElementById('mon-high').textContent=d.high_count||0;
+    document.getElementById('mon-pending').textContent=d.total_pending||0;
+    const armed=Object.values(d.sites||{}).filter(s=>s.arm_state!=='disarmed').length;
+    document.getElementById('mon-sites').textContent=armed;
+
+    const q=document.getElementById('mon-queue');
+    const events=d.recent_events||[];
+    if(!events.length){q.innerHTML='<div class="empty" style="padding:20px">No pending events — all clear</div>';} 
+    else{q.innerHTML=events.map(e=>{
+      const pc={'critical':'var(--red)','high':'var(--orange)','medium':'var(--accent)','low':'var(--text-s)','info':'var(--text-t)'};
+      const color=pc[e.priority]||'var(--text-t)';
+      return`<div class="rule" style="border-left:3px solid ${color}"><div class="rule-info"><div class="rule-name">${e.event_type.replace(/_/g,' ').replace(/\\b\\w/g,l=>l.toUpperCase())} — ${e.camera_name}</div><div class="rule-desc">${e.timestamp.slice(11,19)} &middot; ${(e.confidence*100).toFixed(0)}% &middot; ${e.priority.toUpperCase()}</div></div><div style="display:flex;gap:4px"><button class="btn" style="font-size:9px;padding:4px 8px;background:var(--green)" onclick="monAction(${e.id},'acknowledge')">✓</button><button class="btn" style="font-size:9px;padding:4px 8px;background:var(--red)" onclick="monAction(${e.id},'escalate')">⚠</button><button class="btn btn-s" style="font-size:9px;padding:4px 8px" onclick="monAction(${e.id},'dismiss')">✕</button></div></div>`}).join('')}
+
+    const sites=d.sites||{};
+    const sl=document.getElementById('mon-sites-list');
+    const siteKeys=Object.keys(sites);
+    sl.innerHTML=siteKeys.length?siteKeys.map(id=>{
+      const s=sites[id];
+      const armColor={'armed':'var(--red)','armed_away':'var(--orange)','armed_home':'var(--green)','disarmed':'var(--text-t)'};
+      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px;font-size:11px"><span>${id.slice(0,8)}</span><span style="font-weight:700;color:${armColor[s.arm_state]||'var(--text-t)'}">${s.arm_state.toUpperCase()}</span></div>`}).join(''):'<div style="font-size:10px;color:var(--text-t);padding:8px">No sites configured</div>';
+
+    const audit=d.recent_audit||[];
+    document.getElementById('mon-audit').innerHTML=audit.slice(0,10).map(a=>`<div style="font-size:10px;color:var(--text-t);padding:4px 0;border-bottom:1px solid var(--border)">${a.timestamp.slice(11,19)} — ${a.action} by ${a.operator}</div>`).join('')||'<div style="font-size:10px;color:var(--text-t)">No activity</div>';
+  });
+}
+function monAction(id,action){
+  fetch('/monitoring/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({queue_id:id,action,operator:'admin'})}).then(()=>loadMonitor());
+}
+document.querySelector('[data-p="monitor"]').addEventListener('click',()=>setTimeout(loadMonitor,50));
 
 // LPR
 function loadLPR(){

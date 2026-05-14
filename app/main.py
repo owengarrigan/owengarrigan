@@ -19,6 +19,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.anomaly import AnomalyDetector
+from app.monitoring import (
+    action_event, add_event_to_queue, get_arm_state, get_monitoring_dashboard,
+    get_notification_rules, get_pending_events, set_arm_state,
+)
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
 from app.camera.discovery import build_rtsp_url, get_presets_list
 from app.copilot import generate_daily_summary, generate_weekly_summary, get_recommendations
@@ -919,6 +923,51 @@ def recommendations(request: Request) -> list[dict[str, Any]]:
     """AI-generated recommendations based on patterns."""
     event_store: EventStore = request.app.state.event_store
     return get_recommendations(event_store)
+
+
+class ArmInput(BaseModel):
+    site_id: str
+    state: str
+    operator: str = "admin"
+
+
+class EventActionInput(BaseModel):
+    queue_id: int
+    action: str
+    operator: str = "admin"
+    notes: str = ""
+
+
+@app.get("/monitoring")
+def monitoring_dashboard() -> dict[str, Any]:
+    """Professional monitoring station dashboard."""
+    return get_monitoring_dashboard()
+
+
+@app.get("/monitoring/events")
+def monitoring_events(site_id: str | None = Query(default=None)) -> list[dict[str, Any]]:
+    """Get pending events for the monitoring queue."""
+    return get_pending_events(site_id)
+
+
+@app.post("/monitoring/arm")
+def arm_site(data: ArmInput) -> dict[str, Any]:
+    """Arm or disarm a site."""
+    return set_arm_state(data.site_id, data.state, data.operator)
+
+
+@app.post("/monitoring/action")
+def take_action(data: EventActionInput) -> dict[str, Any]:
+    """Acknowledge, escalate, or dismiss a monitoring event."""
+    result = action_event(data.queue_id, data.action, data.operator, data.notes)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return result
+
+
+@app.get("/monitoring/notification-rules")
+def notification_rules() -> dict[str, Any]:
+    return get_notification_rules()
 
 
 occupancy_manager = OccupancyManager()
