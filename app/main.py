@@ -918,6 +918,52 @@ def recommendations(request: Request) -> list[dict[str, Any]]:
     return get_recommendations(event_store)
 
 
+@app.get("/detections/{event_id}/crop")
+def get_detection_crop(
+    request: Request,
+    event_id: int,
+    detection_index: int = Query(default=0),
+    padding: int = Query(default=40),
+) -> Any:
+    """Return a zoomed crop of a specific detection from an event snapshot."""
+    import cv2
+    from fastapi.responses import Response
+
+    event_store: EventStore = request.app.state.event_store
+    event = event_store.get_event(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    snapshot_path = Path(event.snapshot_path)
+    if not snapshot_path.exists():
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+
+    img = cv2.imread(str(snapshot_path))
+    if img is None:
+        raise HTTPException(status_code=500, detail="Could not read snapshot")
+
+    h, w = img.shape[:2]
+
+    centre_x, centre_y = w // 2, h // 2
+    crop_size = min(w, h) // 2
+
+    x1 = max(0, centre_x - crop_size)
+    y1 = max(0, centre_y - crop_size)
+    x2 = min(w, centre_x + crop_size)
+    y2 = min(h, centre_y + crop_size)
+
+    x1 = max(0, x1 - padding)
+    y1 = max(0, y1 - padding)
+    x2 = min(w, x2 + padding)
+    y2 = min(h, y2 + padding)
+
+    crop = img[y1:y2, x1:x2]
+    crop_resized = cv2.resize(crop, (480, 480), interpolation=cv2.INTER_LANCZOS4)
+
+    _, buffer = cv2.imencode(".jpg", crop_resized, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    return Response(content=buffer.tobytes(), media_type="image/jpeg")
+
+
 @app.get("/cameras/presets")
 def camera_presets() -> list[dict[str, Any]]:
     """Return camera brand presets with URL templates."""

@@ -129,6 +129,31 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 .rule-info{flex:1}.rule-name{font-size:12px;font-weight:600}.rule-desc{font-size:10px;color:var(--text-t)}
 .rule-st{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--green-g);color:var(--green)}
 
+/* LIGHTBOX / DETAIL MODAL */
+.lightbox{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s}
+.lightbox.show{display:flex}
+.lightbox-content{max-width:900px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,.5)}
+.lightbox-img{width:100%;display:block;background:var(--elevated)}
+.lightbox-body{padding:16px 20px}
+.lightbox-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.lightbox-meta{font-size:11px;color:var(--text-t);line-height:1.6}
+.lightbox-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.lightbox-close:hover{background:rgba(255,255,255,.2)}
+.lightbox-zoom{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.lightbox-zoom>div{background:var(--card);padding:4px}
+.lightbox-zoom img{width:100%;display:block;border-radius:4px}
+
+/* LOADING SKELETON */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--elevated) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--rs)}
+
+/* PULSE ANIMATION FOR NEW EVENTS */
+@keyframes pulse-new{0%,100%{box-shadow:0 0 0 0 rgba(45,212,160,.3)}50%{box-shadow:0 0 0 6px rgba(45,212,160,0)}}
+.rc.new-event{animation:pulse-new 2s ease-in-out 3}
+
+/* GLASS CARD VARIANT */
+.glass{background:rgba(23,28,37,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.04)}
+
 /* MOBILE */
 @media(max-width:768px){
   .sb{width:100%;height:56px;top:auto;bottom:0;left:0;right:0;flex-direction:row;border-right:none;border-top:1px solid var(--border);padding:0 8px;overflow-x:auto;overflow-y:hidden}
@@ -227,7 +252,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <div class="page" id="p-detect">
 <div class="ph"><div><h1>Detections</h1><div class="sub">All events from connected cameras</div></div><div style="display:flex;gap:5px"><a href="/export/csv" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ CSV</a><a href="/export/json" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ JSON</a></div></div>
 <div class="pb">
-{% if events %}<div class="rg">{% for e in events[:30] %}<div class="rc"><a href="/snapshots/{{ e.snapshot_filename }}"><img src="/snapshots/{{ e.snapshot_filename }}" loading="lazy"></a><div class="rb"><h4>{{ e.camera_name }} #{{ e.id }}</h4><p>{{ e.timestamp }}</p><span class="dt dt-p">{{ e.event_type }}</span></div></div>{% endfor %}</div>{% else %}<div class="empty">No detections yet</div>{% endif %}
+{% if events %}<div class="rg">{% for e in events[:30] %}<div class="rc" onclick="openLB('/snapshots/{{ e.snapshot_filename }}','{{ e.event_type|replace("_"," ")|title }} — {{ e.camera_name }}','{{ e.labels_detected|join(", ") }} &middot; {{ "%.0f%%"|format(e.confidence*100) }} confidence &middot; {{ e.timestamp }}',{{ e.id }})" style="cursor:pointer"><img src="/snapshots/{{ e.snapshot_filename }}" loading="lazy"><div class="rb"><h4>{{ e.camera_name }} #{{ e.id }}</h4><p>{{ e.timestamp }}</p><span class="dt dt-p">{{ e.event_type }}</span></div></div>{% endfor %}</div>{% else %}<div class="empty">No detections yet</div>{% endif %}
 </div>
 </div>
 
@@ -272,7 +297,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <div class="page" id="p-settings"><div class="ph"><div><h1>Settings</h1><div class="sub">Thresholds, model, storage</div></div></div><div class="pb"><div style="max-width:440px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Detection Thresholds</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">People</span><input type="range" min="10" max="90" value="45" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">45%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">30%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">25%</span></div></div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Supported Cameras</div><div style="font-size:12px;color:var(--text-s);line-height:1.8;margin-bottom:24px">Hikvision &middot; UniFi Protect (RTSPS/RTSP) &middot; Dahua/Amcrest &middot; Reolink &middot; Axis &middot; ONVIF &middot; Scrypted (HomeKit/Ring/Nest)</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Storage</div><button class="btn btn-s" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Up Old Events</button></div></div></div>
 </div>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLB()">
+<button class="lightbox-close" onclick="closeLB()">×</button>
+<div class="lightbox-content" id="lb-content"></div>
+</div>
+
 <script>
+// Lightbox
+function openLB(snapshotUrl, title, meta, eventId){
+  const crop = eventId ? `/detections/${eventId}/crop` : '';
+  document.getElementById('lb-content').innerHTML=`
+    <div class="lightbox-zoom">
+      <div><img src="${snapshotUrl}" alt="Full frame"></div>
+      <div><img src="${crop||snapshotUrl}" alt="Detection crop" style="object-fit:contain;background:var(--bg)"></div>
+    </div>
+    <div class="lightbox-body">
+      <div class="lightbox-title">${title}</div>
+      <div class="lightbox-meta">${meta}</div>
+    </div>`;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLB(){document.getElementById('lightbox').classList.remove('show')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
+
 function nav(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('a'));document.querySelectorAll('.ni').forEach(x=>x.classList.remove('a'));const el=document.getElementById('p-'+p);if(el)el.classList.add('a');const ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('a');}
 
 // Stats
@@ -282,7 +330,7 @@ fetch('/stats').then(r=>r.json()).then(d=>{document.getElementById('an-t').textC
 let sTO;function dSearch(){clearTimeout(sTO);sTO=setTimeout(doSearch,350)}
 function qSearch(t){document.getElementById('sq').value=t;doSearch()}
 function doSearch(){const q=document.getElementById('sq').value.trim();if(!q){document.getElementById('sr').innerHTML='';document.getElementById('sr-info').textContent='';return}
-fetch('/events/search?q='+encodeURIComponent(q)+'&limit=30').then(r=>r.json()).then(d=>{document.getElementById('sr-info').textContent=d.count+' results';document.getElementById('sr').innerHTML=d.results.map((e,i)=>{const desc=d.descriptions&&d.descriptions[i]?d.descriptions[i]:e.camera_name;return`<div class="rc"><a href="/snapshots/${e.snapshot_filename}"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"></a><div class="rb"><h4>${desc}</h4><p>${e.timestamp}</p></div></div>`}).join('')})}
+fetch('/events/search?q='+encodeURIComponent(q)+'&limit=30').then(r=>r.json()).then(d=>{document.getElementById('sr-info').textContent=d.count+' results';document.getElementById('sr').innerHTML=d.results.map((e,i)=>{const desc=d.descriptions&&d.descriptions[i]?d.descriptions[i]:e.camera_name;return`<div class="rc" onclick="openLB('/snapshots/${e.snapshot_filename}','${desc.replace(/'/g,"\\'")}','${e.timestamp} &middot; ${e.camera_name}',${e.id})" style="cursor:pointer"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"><div class="rb"><h4>${desc}</h4><p>${e.timestamp}</p></div></div>`}).join('')})}
 
 // Cameras
 function loadCams(){fetch('/cameras').then(r=>r.json()).then(c=>{const el=document.getElementById('cl');if(!c.length){el.innerHTML='<div class="empty">No cameras. Add one above.</div>';return}el.innerHTML=c.map(x=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px"><div style="flex:1"><div style="font-size:12px;font-weight:600">${x.name}</div><div style="font-size:10px;color:var(--text-t);word-break:break-all">${x.url}</div></div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--accent-g);color:var(--accent);text-transform:uppercase">${x.type}</span><button onclick="delCam('${x.id}')" style="font-size:10px;color:var(--text-t);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer">×</button></div>`).join('')})}
