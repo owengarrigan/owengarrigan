@@ -23,6 +23,9 @@ from app.alarm_manager import (
     load_alarm_rules, toggle_alarm_rule, update_alarm_rule,
 )
 from app.anomaly import AnomalyDetector
+from app.api_keys import generate_api_key, get_api_key_stats, revoke_api_key, PERMISSION_SCOPES
+from app.geofence import check_location, configure_geofence, load_geofence_config
+from app.scoring import calculate_risk_score
 from app.monitoring import (
     action_event, add_event_to_queue, get_arm_state, get_monitoring_dashboard,
     get_notification_rules, get_pending_events, set_arm_state,
@@ -953,6 +956,80 @@ def recommendations(request: Request) -> list[dict[str, Any]]:
     """AI-generated recommendations based on patterns."""
     event_store: EventStore = request.app.state.event_store
     return get_recommendations(event_store)
+
+
+class ApiKeyInput(BaseModel):
+    name: str
+    permissions: list[str] = ["read"]
+    rate_limit_per_minute: int = 60
+
+
+@app.get("/api-keys")
+def list_api_keys() -> dict[str, Any]:
+    """List API keys and stats."""
+    return {**get_api_key_stats(), "permission_scopes": PERMISSION_SCOPES}
+
+
+@app.post("/api-keys")
+def create_api_key(data: ApiKeyInput) -> dict[str, Any]:
+    """Generate a new API key. Key is shown only once."""
+    return generate_api_key(data.name, data.permissions, data.rate_limit_per_minute)
+
+
+@app.delete("/api-keys/{key_id}")
+def delete_api_key(key_id: str) -> dict[str, str]:
+    if revoke_api_key(key_id):
+        return {"status": "revoked"}
+    raise HTTPException(status_code=404, detail="Key not found")
+
+
+class GeofenceConfigInput(BaseModel):
+    home_lat: float
+    home_lon: float
+    radius_meters: int = 100
+    auto_arm: bool = True
+    auto_disarm: bool = True
+
+
+class LocationCheckInput(BaseModel):
+    lat: float
+    lon: float
+    device_id: str = "phone"
+
+
+@app.get("/geofence")
+def geofence_config() -> dict[str, Any]:
+    return load_geofence_config()
+
+
+@app.post("/geofence/configure")
+def setup_geofence(data: GeofenceConfigInput) -> dict[str, Any]:
+    return configure_geofence(data.home_lat, data.home_lon, data.radius_meters, data.auto_arm, data.auto_disarm)
+
+
+@app.post("/geofence/check")
+def geofence_check(data: LocationCheckInput) -> dict[str, Any]:
+    """Check device location — triggers arm/disarm if crossing boundary."""
+    return check_location(data.lat, data.lon, data.device_id)
+
+
+class RiskScoreInput(BaseModel):
+    event_type: str
+    confidence: float
+    arm_state: str = "disarmed"
+    is_after_hours: bool = False
+    in_restricted_zone: bool = False
+    is_anomalous: bool = False
+    is_known_plate: bool = False
+
+
+@app.post("/risk-score")
+def get_risk_score(data: RiskScoreInput) -> dict[str, Any]:
+    """Calculate risk score for an event based on context."""
+    return calculate_risk_score(
+        data.event_type, data.confidence, data.arm_state,
+        data.is_after_hours, data.in_restricted_zone, data.is_anomalous, data.is_known_plate
+    )
 
 
 class AlarmRuleInput(BaseModel):
