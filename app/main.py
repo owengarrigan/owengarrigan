@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.analysis_store import get_analysis_by_id, load_analysis_history, store_analysis_result
 from app.alarm_manager import (
     create_alarm_rule, delete_alarm_rule, get_alarm_manager_config,
     load_alarm_rules, toggle_alarm_rule, update_alarm_rule,
@@ -596,6 +597,23 @@ async def analyse_upload(
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
+    stored = store_analysis_result(video.filename or "upload.mp4", result)
+    result["analysis_id"] = stored["id"]
+    return result
+
+
+@app.get("/analysis/history")
+def analysis_history() -> list[dict[str, Any]]:
+    """Get all past video analyses."""
+    return load_analysis_history()
+
+
+@app.get("/analysis/{analysis_id}")
+def get_analysis(analysis_id: int) -> dict[str, Any]:
+    """Get a specific past analysis by ID."""
+    result = get_analysis_by_id(analysis_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
     return result
 
 

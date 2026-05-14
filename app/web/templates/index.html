@@ -346,7 +346,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <!-- Webhook Config -->
 <div style="margin-top:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Webhook Endpoint</div><div style="display:flex;gap:6px;max-width:400px"><input class="inp" id="wh" placeholder="https://hooks.slack.com/..." style="flex:1;font-size:11px"><button class="btn btn-s" onclick="testWH()" style="font-size:10px">Test</button></div><div id="whr" style="font-size:10px;margin-top:4px;display:none"></div></div>
 </div></div>
-<div class="page" id="p-analyse"><div class="ph"><div><h1>Analyse</h1><div class="sub">Upload video for instant AI detection</div></div></div><div class="pb"><div class="drop-zone" style="max-width:500px;padding:36px 24px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:center;transition:.15s;position:relative" id="dz"><input type="file" id="fi" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer"><h3 style="font-size:13px;font-weight:600;margin-bottom:3px">Drop video here</h3><p style="font-size:11px;color:var(--text-t)">MP4, MOV, AVI</p></div><div id="ap" style="display:none;margin-top:12px;font-size:12px;color:var(--text-s)">Analysing…</div><div class="rg" id="ar"></div></div></div>
+<div class="page" id="p-analyse"><div class="ph"><div><h1>Analyse</h1><div class="sub">Upload video for instant AI detection</div></div></div><div class="pb">
+<div class="drop-zone" style="max-width:500px;padding:36px 24px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:center;transition:.15s;position:relative" id="dz"><input type="file" id="fi" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer"><h3 style="font-size:13px;font-weight:600;margin-bottom:3px">Drop video here</h3><p style="font-size:11px;color:var(--text-t)">MP4, MOV, AVI</p></div>
+<div id="ap" style="display:none;margin-top:12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="display:flex;align-items:center;gap:8px"><div class="skeleton" style="width:16px;height:16px;border-radius:50%"></div><span style="font-size:12px;color:var(--text-s)">Analysing video with YOLO11m…</span></div></div>
+<!-- Results stay visible -->
+<div id="ar-summary" style="display:none;margin-top:16px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"></div>
+<div id="ar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px;justify-items:center"></div>
+<!-- Past analyses -->
+<div id="ar-history" style="margin-top:28px"></div>
+</div></div>
 <div class="page" id="p-cases"><div class="ph"><div><h1>Cases</h1><div class="sub">Incident reports and investigations</div></div><button class="btn" onclick="document.getElementById('ncf').style.display='block'">+ New Case</button></div><div class="pb"><div id="ncf" style="display:none;max-width:420px;margin-bottom:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"><input class="inp" id="cti" placeholder="Case title" style="width:100%;margin-bottom:6px"><textarea class="inp" id="cde" placeholder="Description" style="width:100%;height:60px;resize:vertical;margin-bottom:8px"></textarea><div style="display:flex;gap:6px"><button class="btn" onclick="mkCase()">Create</button><button class="btn btn-s" onclick="document.getElementById('ncf').style.display='none'">Cancel</button></div></div><div id="csl"></div></div></div>
 <div class="page" id="p-health"><div class="ph"><div><h1>System Health</h1><div class="sub">Processing status and resources</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" style="color:var(--green)">Online</div><div class="sl">Status</div></div><div class="sc blue"><div class="sv">YOLO11m</div><div class="sl">Model</div></div><div class="sc purple"><div class="sv" id="he">—</div><div class="sl">Events</div></div><div class="sc orange"><div class="sv" id="hs">—</div><div class="sl">Snapshots</div></div><div class="sc cyan"><div class="sv" id="hp">0</div><div class="sl">Pipelines</div></div></div><div id="hd" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:400px"></div></div></div>
 <div class="page" id="p-settings"><div class="ph"><div><h1>Settings</h1><div class="sub">Thresholds, model, storage</div></div></div><div class="pb"><div style="max-width:440px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Detection Thresholds</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">People</span><input type="range" min="10" max="90" value="45" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">45%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">30%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">25%</span></div></div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Supported Cameras</div><div style="font-size:12px;color:var(--text-s);line-height:1.8;margin-bottom:24px">Hikvision &middot; UniFi Protect (RTSPS/RTSP) &middot; Dahua/Amcrest &middot; Reolink &middot; Axis &middot; ONVIF &middot; Scrypted (HomeKit/Ring/Nest)</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Storage</div><button class="btn btn-s" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Up Old Events</button></div></div></div>
@@ -411,7 +419,80 @@ const dz=document.getElementById('dz'),fi=document.getElementById('fi');
 ['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.style.borderColor=''}));
 dz.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])upload(ev.dataTransfer.files[0])});
 fi.addEventListener('change',()=>{if(fi.files[0])upload(fi.files[0])});
-function upload(f){document.getElementById('ap').style.display='block';document.getElementById('ar').innerHTML='';const fd=new FormData();fd.append('video',f);fd.append('people_threshold','0.45');fd.append('vehicles_threshold','0.30');fd.append('animals_threshold','0.25');fd.append('detect_people','true');fd.append('detect_vehicles','true');fd.append('detect_animals','true');fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{document.getElementById('ap').style.display='none';document.getElementById('ar').innerHTML=d.frames.filter(f=>f.detections.length).map(f=>`<div class="rc"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy"><div class="rb"><h4>Frame ${f.frame_number}</h4>${f.detections.map(x=>`<span class="dt dt-${x.category==='people'?'p':x.category==='vehicles'?'v':'a'}">${x.label} ${(x.confidence*100).toFixed(0)}%</span>`).join('')}</div></div>`).join('')}).catch(()=>{document.getElementById('ap').style.display='none'})}
+function upload(f){
+  document.getElementById('ap').style.display='block';
+  document.getElementById('ar').innerHTML='';
+  document.getElementById('ar-summary').style.display='none';
+  const fd=new FormData();fd.append('video',f);
+  fd.append('people_threshold','0.45');fd.append('vehicles_threshold','0.30');fd.append('animals_threshold','0.25');
+  fd.append('detect_people','true');fd.append('detect_vehicles','true');fd.append('detect_animals','true');
+  fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    document.getElementById('ap').style.display='none';
+    showAnalysisResults(d, f.name);
+    loadAnalysisHistory();
+  }).catch(()=>{document.getElementById('ap').style.display='none'});
+}
+
+function showAnalysisResults(d, filename) {
+  const cats = d.category_summary || {};
+  const total = d.frames.reduce((s,f)=>s+f.detections.length,0);
+  const plates = d.plates_detected || [];
+
+  // Summary card
+  const sum = document.getElementById('ar-summary');
+  sum.style.display = 'block';
+  sum.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:700">${filename||'Video Analysis'}</div>
+      <div style="font-size:10px;color:var(--text-t)">${d.frames_analysed} frames analysed</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">${cats.people||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">People</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${cats.vehicles||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Vehicles</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--orange)">${cats.animals||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Animals</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700">${total}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Total</div></div>
+      ${plates.length ? `<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--purple)">${plates.length}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Plates</div></div>` : ''}
+    </div>
+    ${plates.length ? `<div style="margin-top:10px;font-size:11px;color:var(--text-s)">Plates: ${plates.map(p=>`<span style="font-family:monospace;font-weight:700;letter-spacing:.08em;padding:2px 6px;background:var(--purple-g);border-radius:3px;margin-right:4px">${p.plate}</span>`).join('')}</div>` : ''}
+  `;
+
+  // Detection frames (centered, clickable)
+  const grid = document.getElementById('ar');
+  const framesWithDet = d.frames.filter(f=>f.detections.length);
+  grid.innerHTML = framesWithDet.map(f => {
+    const tags = f.detections.map(x => `<span class="dt dt-${x.category==='people'?'p':x.category==='vehicles'?'v':'a'}">${x.label} ${(x.confidence*100).toFixed(0)}%${x.plate?' 🔢'+x.plate:''}</span>`).join('');
+    return `<div class="rc" onclick="openLB('/analysis-snapshots/${f.snapshot_filename}','Frame ${f.frame_number}','${f.detections.map(x=>x.label+' '+(x.confidence*100).toFixed(0)+'%').join(', ')}',0)" style="cursor:pointer;max-width:360px;width:100%"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy" style="aspect-ratio:16/10"><div class="rb"><h4 style="font-size:11px">Frame ${f.frame_number}</h4>${tags}</div></div>`;
+  }).join('');
+}
+
+// Load past analyses
+function loadAnalysisHistory(){
+  fetch('/analysis/history').then(r=>r.json()).then(history=>{
+    const el=document.getElementById('ar-history');
+    if(!history.length){el.innerHTML='';return;}
+    el.innerHTML=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Previous Analyses</div>`+
+      history.slice(-10).reverse().map(h=>{
+        const cats=h.category_summary||{};
+        const dets=h.frames_with_detections||[];
+        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px;cursor:pointer" onclick="loadPastAnalysis(${h.id})"><div style="flex:1"><div style="font-size:12px;font-weight:600">${h.filename}</div><div style="font-size:10px;color:var(--text-t)">${h.timestamp.slice(0,16)} &middot; ${h.frames_analysed} frames &middot; ${dets.length} with detections</div></div><div style="display:flex;gap:8px;font-size:11px;font-weight:700"><span style="color:var(--green)">${cats.people||0}P</span><span style="color:var(--accent)">${cats.vehicles||0}V</span><span style="color:var(--orange)">${cats.animals||0}A</span></div></div>`;
+      }).join('');
+  });
+}
+
+function loadPastAnalysis(id){
+  fetch('/analysis/'+id).then(r=>r.json()).then(d=>{
+    showAnalysisResults({
+      frames_analysed:d.frames_analysed,
+      category_summary:d.category_summary,
+      object_summary:d.object_summary,
+      plates_detected:d.plates_detected||[],
+      frames:d.frames_with_detections||[]
+    }, d.filename);
+  });
+}
+
+// Load history on page visit
+document.querySelector('[data-p="analyse"]').addEventListener('click',()=>setTimeout(loadAnalysisHistory,50));
 
 // Cases
 function mkCase(){const t=document.getElementById('cti').value.trim(),d=document.getElementById('cde').value.trim();if(!t)return;fetch('/cases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:d,event_ids:[]})}).then(()=>{document.getElementById('cti').value='';document.getElementById('cde').value='';document.getElementById('ncf').style.display='none';loadC()})}
