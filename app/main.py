@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.anomaly import AnomalyDetector
 from app.auth import create_user, is_setup_complete, logout, verify_login, verify_session
 from app.camera.discovery import build_rtsp_url, get_presets_list
 from app.copilot import generate_daily_summary, generate_weekly_summary, get_recommendations
@@ -27,7 +28,9 @@ from app.lpr import (
     log_plate_sighting, normalise_plate, remove_known_plate,
 )
 from app.notifications import get_notification_log, send_slack, send_webhook
+from app.occupancy import OccupancyManager
 from app.scheduling import get_schedule_presets, is_within_schedule
+from app.sites import add_site, delete_site, get_industry_templates, get_site_summary, load_sites
 from app.training import add_correction, build_yolo_dataset, get_training_command, get_training_stats
 from app.tracking import HeatmapAccumulator
 from app.zones import load_zones, save_zones
@@ -916,6 +919,80 @@ def recommendations(request: Request) -> list[dict[str, Any]]:
     """AI-generated recommendations based on patterns."""
     event_store: EventStore = request.app.state.event_store
     return get_recommendations(event_store)
+
+
+occupancy_manager = OccupancyManager()
+anomaly_detector = AnomalyDetector()
+
+occupancy_manager.add_zone("main_entrance", "Main Entrance", dwell_threshold=300)
+occupancy_manager.add_zone("loading_bay", "Loading Bay", dwell_threshold=3600)
+occupancy_manager.add_zone("retail_floor", "Retail Floor", dwell_threshold=600)
+
+
+@app.get("/occupancy")
+def get_occupancy() -> dict[str, Any]:
+    """Get real-time occupancy across all zones."""
+    return occupancy_manager.get_all_occupancy()
+
+
+@app.post("/occupancy/{zone_id}/entry")
+def record_entry(zone_id: str, object_id: int = Query(default=0)) -> dict[str, Any]:
+    occupancy_manager.record_entry(zone_id, object_id)
+    zone = occupancy_manager.get_zone_occupancy(zone_id)
+    return zone or {"error": "Zone not found"}
+
+
+@app.post("/occupancy/{zone_id}/exit")
+def record_exit(zone_id: str, object_id: int = Query(default=0)) -> dict[str, Any]:
+    dwell = occupancy_manager.record_exit(zone_id, object_id)
+    zone = occupancy_manager.get_zone_occupancy(zone_id)
+    result = zone or {"error": "Zone not found"}
+    result["dwell_seconds"] = round(dwell, 1)
+    return result
+
+
+@app.get("/occupancy/dwell-alerts")
+def dwell_alerts() -> list[dict[str, Any]]:
+    return occupancy_manager.check_all_dwell_alerts()
+
+
+@app.get("/anomaly/baselines")
+def anomaly_baselines() -> dict[str, Any]:
+    return anomaly_detector.get_baselines()
+
+
+@app.get("/anomaly/heatmap")
+def anomaly_heatmap() -> list[dict[str, Any]]:
+    return anomaly_detector.get_activity_heatmap()
+
+
+class SiteInput(BaseModel):
+    name: str
+    address: str = ""
+    timezone: str = "Europe/Dublin"
+    industry: str = "security"
+
+
+@app.get("/sites")
+def list_sites() -> dict[str, Any]:
+    return get_site_summary()
+
+
+@app.post("/sites")
+def create_site(data: SiteInput) -> dict[str, Any]:
+    return add_site(data.name, data.address, data.timezone, data.industry)
+
+
+@app.delete("/sites/{site_id}")
+def remove_site(site_id: str) -> dict[str, str]:
+    if delete_site(site_id):
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="Site not found")
+
+
+@app.get("/sites/templates")
+def site_templates() -> dict[str, Any]:
+    return get_industry_templates()
 
 
 @app.get("/detections/{event_id}/crop")
