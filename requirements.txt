@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+python-dotenv
+pydantic-settings
+opencv-python
+ultralytics
+numpy
+httpx
+easyocr

@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/vigil_logo.png">
+<title>Vigil</title>
+<style>
+:root{--bg:#0a0d12;--surface:#12161d;--card:#171c25;--card-h:#1d2330;--elevated:#222835;--sidebar:#090c10;--input:#141923;--border:rgba(255,255,255,0.05);--border-h:rgba(255,255,255,0.1);--text:#f2f4f7;--text-s:rgba(242,244,247,0.5);--text-t:rgba(242,244,247,0.28);--accent:#4f8fff;--accent-h:#3b7cf5;--accent-g:rgba(79,143,255,0.08);--green:#2dd4a0;--green-g:rgba(45,212,160,0.08);--orange:#f5a623;--orange-g:rgba(245,166,35,0.08);--red:#f56565;--red-g:rgba(245,101,101,0.08);--purple:#9f7aea;--purple-g:rgba(159,122,234,0.08);--cyan:#06b6d4;--cyan-g:rgba(6,182,212,0.08);--r:12px;--rs:8px;--font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;--sw:232px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;display:flex;overflow:hidden}
+
+/* SIDEBAR */
+.sb{position:fixed;top:0;left:0;bottom:0;width:var(--sw);background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sb-brand{display:flex;align-items:center;gap:9px;padding:18px 16px 14px}
+.sb-brand img{width:26px;height:26px;border-radius:6px}
+.sb-brand span{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.sb-brand .pro{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 5px;border-radius:3px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;margin-left:3px}
+.sb-section{padding:10px 10px 2px}
+.sb-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-t);padding:0 6px 5px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--text-s);cursor:pointer;transition:.15s}
+.ni:hover{background:rgba(255,255,255,0.03);color:var(--text)}
+.ni.a{background:var(--accent-g);color:var(--accent)}
+.ni svg{width:15px;height:15px;opacity:.4;flex-shrink:0}
+.ni.a svg{opacity:1}
+.ni .badge{margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--accent-g);color:var(--accent)}
+.ni .tag{margin-left:auto;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:1px 4px;border-radius:3px}
+.tag-new{background:var(--green-g);color:var(--green)}
+.tag-ai{background:var(--purple-g);color:var(--purple)}
+.tag-beta{background:var(--orange-g);color:var(--orange)}
+.sb-foot{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border)}
+.sb-foot .status{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-t)}
+.sb-foot .dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page{display:none;animation:fadeIn .2s}
+.page.a{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{padding:20px 28px 0;display:flex;align-items:flex-end;justify-content:space-between}
+.ph h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.ph .sub{font-size:12px;color:var(--text-t);margin-top:1px}
+.pb{padding:18px 28px 40px}
+
+/* CARDS & STATS */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:20px}
+.sc{padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);transition:.15s;position:relative;overflow:hidden}
+.sc:hover{border-color:var(--border-h)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;opacity:0;transition:.15s}
+.sc:hover::before{opacity:1}
+.sc.green::before{background:var(--green)}.sc.blue::before{background:var(--accent)}.sc.orange::before{background:var(--orange)}.sc.purple::before{background:var(--purple)}.sc.cyan::before{background:var(--cyan)}
+.sc .sv{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.sc .sl{font-size:9.5px;color:var(--text-t);text-transform:uppercase;letter-spacing:.05em;margin-top:5px}
+.sc .st{font-size:10px;color:var(--green);margin-top:4px}
+
+/* MODULES */
+.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:18px}
+.mc{padding:16px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:.15s;position:relative}
+.mc:hover{border-color:var(--border-h);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.mc h3{font-size:14px;font-weight:600;margin:10px 0 3px}
+.mc p{font-size:11px;color:var(--text-t);line-height:1.4}
+.mc .mt{position:absolute;top:12px;right:12px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:3px}
+.mt-on{background:var(--green-g);color:var(--green)}.mt-soon{background:var(--orange-g);color:var(--orange)}
+.mc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+
+/* GENERIC */
+.inp{padding:8px 12px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);outline:none;transition:.15s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-g)}
+.inp::placeholder{color:var(--text-t)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;font-size:12px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:99px;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--accent-h);box-shadow:0 3px 12px var(--accent-g)}
+.btn-s{background:var(--card);color:var(--text-s);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--border-h);color:var(--text)}
+.empty{text-align:center;padding:40px;color:var(--text-t);font-size:12px}
+
+/* GRID */
+.rg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:14px}
+.rc{overflow:hidden;border-radius:var(--r);background:var(--card);border:1px solid var(--border);transition:.15s}
+.rc:hover{border-color:var(--border-h);transform:translateY(-1px)}
+.rc img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:var(--elevated)}
+.rc .rb{padding:8px 10px}
+.rc .rb h4{font-size:11px;font-weight:600;margin-bottom:2px}
+.rc .rb p{font-size:10px;color:var(--text-t)}
+.dt{display:inline-block;font-size:9px;padding:2px 5px;border-radius:3px;font-weight:600;margin:2px 2px 0 0}
+.dt-p{background:var(--green-g);color:var(--green)}.dt-v{background:var(--accent-g);color:var(--accent)}.dt-a{background:var(--orange-g);color:var(--orange)}
+
+/* SEARCH */
+.ai-box{max-width:580px;position:relative;margin-bottom:10px}
+.ai-box input{width:100%;padding:12px 16px 12px 40px;font-size:14px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;transition:.15s}
+.ai-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g),0 4px 16px rgba(0,0,0,.2)}
+.ai-box input::placeholder{color:var(--text-t)}
+.ai-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:4px 10px;font-size:10px;font-weight:600;border-radius:99px;background:var(--card);border:1px solid var(--border);color:var(--text-s);cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-g)}
+
+/* TIMELINE */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border)}
+.ti{position:relative;margin-bottom:10px}
+.ti .td{position:absolute;left:-20px;top:12px;width:8px;height:8px;border-radius:50%;border:2px solid var(--bg)}
+.td-g{background:var(--green);box-shadow:0 0 5px rgba(45,212,160,.3)}.td-o{background:var(--orange);box-shadow:0 0 5px rgba(245,166,35,.3)}.td-b{background:var(--accent);box-shadow:0 0 5px rgba(79,143,255,.3)}
+.tc{display:flex;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);transition:.15s}
+.tc:hover{border-color:var(--border-h)}
+.tc img{width:60px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--elevated)}
+.tc-info{flex:1;min-width:0}
+.tc-title{font-size:12px;font-weight:600}
+.tc-desc{font-size:10px;color:var(--text-s);margin-top:1px}
+.tc-time{font-size:9px;color:var(--text-t);margin-top:3px}
+
+/* ZONES */
+.zone-tb{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.zone-wrap{display:grid;grid-template-columns:1fr 260px;gap:12px}
+.zone-canvas{width:100%;aspect-ratio:16/9;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:crosshair}
+.zone-list{display:flex;flex-direction:column;gap:6px}
+.zi{padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)}
+.zi h4{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.zi p{font-size:10px;color:var(--text-t);margin-top:2px}
+.zi .zd{width:7px;height:7px;border-radius:50%}
+
+/* ALERTS */
+.rule{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px}
+.rule:hover{border-color:var(--border-h)}
+.rule-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rule-info{flex:1}.rule-name{font-size:12px;font-weight:600}.rule-desc{font-size:10px;color:var(--text-t)}
+.rule-st{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--green-g);color:var(--green)}
+
+/* LIGHTBOX / DETAIL MODAL */
+.lightbox{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s}
+.lightbox.show{display:flex}
+.lightbox-content{max-width:900px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,.5)}
+.lightbox-img{width:100%;display:block;background:var(--elevated)}
+.lightbox-body{padding:16px 20px}
+.lightbox-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.lightbox-meta{font-size:11px;color:var(--text-t);line-height:1.6}
+.lightbox-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.lightbox-close:hover{background:rgba(255,255,255,.2)}
+.lightbox-zoom{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.lightbox-zoom>div{background:var(--card);padding:4px}
+.lightbox-zoom img{width:100%;display:block;border-radius:4px}
+
+/* LOADING SKELETON */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--elevated) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--rs)}
+
+/* PULSE ANIMATION FOR NEW EVENTS */
+@keyframes pulse-new{0%,100%{box-shadow:0 0 0 0 rgba(45,212,160,.3)}50%{box-shadow:0 0 0 6px rgba(45,212,160,0)}}
+.rc.new-event{animation:pulse-new 2s ease-in-out 3}
+
+/* GLASS CARD VARIANT */
+.glass{background:rgba(23,28,37,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.04)}
+
+/* COMMAND PALETTE */
+.cmd-palette{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:flex-start;justify-content:center;padding-top:min(20vh,120px)}
+.cmd-palette.show{display:flex;animation:fadeIn .15s}
+.cmd-box{width:min(560px,90vw);background:var(--card);border:1px solid var(--border-h);border-radius:14px;box-shadow:0 24px 48px rgba(0,0,0,.5);overflow:hidden}
+.cmd-input{width:100%;padding:16px 20px;font-size:15px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);outline:none}
+.cmd-input::placeholder{color:var(--text-t)}
+.cmd-results{max-height:320px;overflow-y:auto;padding:6px}
+.cmd-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;transition:.1s}
+.cmd-item:hover,.cmd-item.selected{background:var(--accent-g)}
+.cmd-item svg{width:16px;height:16px;opacity:.4;flex-shrink:0}
+.cmd-item:hover svg{opacity:.8}
+.cmd-item .cmd-label{font-size:13px;font-weight:500}
+.cmd-item .cmd-hint{margin-left:auto;font-size:10px;color:var(--text-t);background:var(--elevated);padding:2px 6px;border-radius:4px}
+.cmd-footer{padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:10px;color:var(--text-t)}
+.cmd-footer kbd{background:var(--elevated);padding:1px 5px;border-radius:3px;font-family:inherit}
+
+/* TOAST NOTIFICATIONS */
+.toast-container{position:fixed;top:16px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideInRight .3s ease;max-width:360px;backdrop-filter:blur(12px)}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.toast.exit{animation:slideOutRight .2s ease forwards}
+@keyframes slideOutRight{to{opacity:0;transform:translateX(40px)}}
+.toast-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+.toast-icon.success{background:var(--green-g);color:var(--green)}
+.toast-icon.warning{background:var(--orange-g);color:var(--orange)}
+.toast-icon.error{background:var(--red-g);color:var(--red)}
+.toast-icon.info{background:var(--accent-g);color:var(--accent)}
+.toast-body{flex:1}
+.toast-title{font-size:12px;font-weight:600}
+.toast-msg{font-size:11px;color:var(--text-s);margin-top:1px}
+
+/* SPARKLINES */
+.sparkline{display:block}
+.sparkline polyline{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* PAGE TRANSITIONS */
+.page{opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s}
+.page.a{opacity:1;transform:none}
+
+/* KEYBOARD HINT */
+.kb-hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text-t);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 10px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.kb-hint.show{opacity:1}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sb{width:100%;height:56px;top:auto;bottom:0;left:0;right:0;flex-direction:row;border-right:none;border-top:1px solid var(--border);padding:0 8px;overflow-x:auto;overflow-y:hidden}
+  .sb-brand,.sb-label,.sb-foot,.ni span,.ni .badge,.ni .tag,.sb-section{display:none}
+  .sb .mobile-nav{display:flex;align-items:center;gap:4px;height:100%;padding:0 4px}
+  .ni{padding:10px 12px;border-radius:10px;flex-shrink:0}
+  .ni svg{width:20px;height:20px}
+  .main{margin-left:0;margin-bottom:56px;height:calc(100dvh - 56px)}
+  .ph{padding:14px 16px 0}.pb{padding:12px 16px 24px}
+  .sg{grid-template-columns:repeat(2,1fr)}.mg{grid-template-columns:1fr}
+  .rg{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .zone-wrap{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<aside class="sb">
+  <div class="sb-brand"><img src="/static/vigil_logo.png" alt="V"><span>Vigil</span><span class="pro">PRO</span></div>
+  <div class="sb-section"><div class="sb-label">Monitoring</div>
+    <div class="ni" onclick="nav('monitor')" data-p="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Station</span><span class="tag tag-new">Pro</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Overview</div>
+    <div class="ni a" onclick="nav('dash')" data-p="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
+    <div class="ni" onclick="nav('analytics')" data-p="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span><span class="tag tag-new">New</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Monitor</div>
+    <div class="ni" onclick="nav('live')" data-p="live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Live View</span></div>
+    <div class="ni" onclick="nav('cameras')" data-p="cameras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Cameras</span><span class="badge">{{ cameras|length }}</span></div>
+    <div class="ni" onclick="nav('zones')" data-p="zones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg><span>Zones</span><span class="tag tag-beta">Beta</span></div>
+    <div class="ni" onclick="nav('detect')" data-p="detect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Detections</span><span class="badge">{{ events|length }}</span></div>
+    <div class="ni" onclick="nav('lpr')" data-p="lpr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="6" y2="12.01"/><line x1="18" y1="12" x2="18" y2="12.01"/></svg><span>Plates</span><span class="tag tag-new">LPR</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Intelligence</div>
+    <div class="ni" onclick="nav('ask')" data-p="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Ask Vigil</span><span class="tag tag-ai">AI</span></div>
+    <div class="ni" onclick="nav('timeline')" data-p="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Timeline</span></div>
+    <div class="ni" onclick="nav('alerts')" data-p="alerts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Alerts</span></div>
+    <div class="ni" onclick="nav('analyse')" data-p="analyse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span>Analyse</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">Investigate</div>
+    <div class="ni" onclick="nav('cases')" data-p="cases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Cases</span></div>
+  </div>
+  <div class="sb-section"><div class="sb-label">System</div>
+    <div class="ni" onclick="nav('health')" data-p="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Health</span></div>
+    <div class="ni" onclick="nav('settings')" data-p="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></div>
+  </div>
+  <div class="sb-foot"><div class="status"><span class="dot"></span>Online &middot; YOLO11m &middot; Edge</div></div>
+  <nav class="mobile-nav"></nav>
+</aside>
+
+<div class="main">
+<!-- MONITORING STATION -->
+<div class="page" id="p-monitor">
+<div class="ph"><div><h1>Monitoring Station</h1><div class="sub">Professional alarm monitoring — all sites, real-time</div></div></div>
+<div class="pb">
+<div class="sg">
+<div class="sc red" style="--border:rgba(245,101,101,.2)"><div class="sv" id="mon-critical" style="color:var(--red)">0</div><div class="sl">Critical</div></div>
+<div class="sc orange"><div class="sv" id="mon-high" style="color:var(--orange)">0</div><div class="sl">High Priority</div></div>
+<div class="sc blue"><div class="sv" id="mon-pending">0</div><div class="sl">Pending</div></div>
+<div class="sc green"><div class="sv" id="mon-sites">0</div><div class="sl">Sites Armed</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:14px;margin-top:16px">
+<div>
+<div style="font-size:12px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+<span>Event Queue</span>
+<span style="font-size:10px;color:var(--text-t)">Sorted by priority</span>
+</div>
+<div id="mon-queue"></div>
+</div>
+<div>
+<div style="font-size:12px;font-weight:700;margin-bottom:10px">Site Status</div>
+<div id="mon-sites-list"></div>
+<div style="margin-top:16px;font-size:12px;font-weight:700;margin-bottom:10px">Audit Trail</div>
+<div id="mon-audit" style="max-height:200px;overflow-y:auto"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page a" id="p-dash">
+<div class="ph"><div><h1>Dashboard</h1><div class="sub">AI Video Intelligence — Real-time overview</div></div></div>
+<div class="pb">
+<div class="sg">
+<div class="sc green"><div class="sv" id="ds-p">{{ events|length }}</div><div class="sl">Detections Today</div><svg class="sparkline" width="80" height="24" viewBox="0 0 80 24"><polyline stroke="var(--green)" points="0,20 10,18 20,15 30,12 40,14 50,8 60,10 70,6 80,4" opacity=".5"/></svg></div>
+<div class="sc blue"><div class="sv">{{ cameras|length }}</div><div class="sl">Cameras</div><div class="st">All online</div></div>
+<div class="sc orange"><div class="sv">0</div><div class="sl">Alerts</div><div class="st">No active alerts</div></div>
+<div class="sc purple"><div class="sv">24/7</div><div class="sl">Uptime</div><svg class="sparkline" width="80" height="24" viewBox="0 0 80 24"><polyline stroke="var(--purple)" points="0,4 10,4 20,4 30,4 40,4 50,4 60,4 70,4 80,4" opacity=".4"/></svg></div>
+<div class="sc cyan"><div class="sv">~15ms</div><div class="sl">Inference</div><svg class="sparkline" width="80" height="24" viewBox="0 0 80 24"><polyline stroke="var(--cyan)" points="0,12 10,14 20,11 30,13 40,12 50,15 60,11 70,13 80,12" opacity=".4"/></svg></div>
+</div>
+<div class="sb-label" style="padding:8px 0">MODULES</div>
+<div class="mg">
+<div class="mc" onclick="nav('detect')"><div class="mc-icon" style="background:var(--green-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span class="mt mt-on">Active</span><h3>Security</h3><p>Intrusion detection, perimeter alerts, after-hours monitoring</p></div>
+<div class="mc" onclick="nav('analytics')"><div class="mc-icon" style="background:var(--accent-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><span class="mt mt-on">Active</span><h3>Retail Analytics</h3><p>Footfall counting, heatmaps, dwell time, queue detection</p></div>
+<div class="mc" onclick="nav('zones')"><div class="mc-icon" style="background:var(--orange-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8"><rect x="1" y="5" width="15" height="14" rx="2"/><polygon points="23 7 16 12 23 17"/></svg></div><span class="mt mt-on">Active</span><h3>Warehouse & Fleet</h3><p>Speed monitoring, zone violations, vehicle tracking, PPE</p></div>
+<div class="mc"><div class="mc-icon" style="background:var(--purple-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><span class="mt mt-on">Active</span><h3>Events & Logistics</h3><p>Load-in timing, bay occupancy, truck counting, crew tracking</p></div>
+<div class="mc"><div class="mc-icon" style="background:var(--cyan-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><span class="mt mt-on">Active</span><h3>Leisure & Sports</h3><p>Visitor counting, peak hours, after-hours security, usage reports</p></div>
+<div class="mc" onclick="nav('lpr')"><div class="mc-icon" style="background:var(--red-g)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><span class="mt mt-on">Active</span><h3>License Plates</h3><p>ANPR, plate database, whitelist/blacklist, access control</p></div>
+</div>
+</div>
+</div>
+
+<!-- ASK VIGIL -->
+<div class="page" id="p-ask">
+<div class="ph"><div><h1>Ask Vigil</h1><div class="sub">Natural language search across all cameras</div></div></div>
+<div class="pb">
+<div class="ai-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="sq" placeholder='Try: "Show me the fox last night" or "Vehicles this week"' oninput="dSearch()" onkeydown="if(event.key==='Enter')doSearch()"></div>
+<div class="chips"><span class="chip" onclick="qSearch('Show me all people')">Show me all people</span><span class="chip" onclick="qSearch('Animals last night')">Animals last night</span><span class="chip" onclick="qSearch('Vehicles high confidence')">Vehicles high confidence</span></div>
+<div id="sr-info" style="font-size:11px;color:var(--text-t);margin-bottom:10px"></div>
+<div class="rg" id="sr"></div>
+</div>
+</div>
+
+<!-- TIMELINE -->
+<div class="page" id="p-timeline">
+<div class="ph"><div><h1>Timeline</h1><div class="sub">Chronological activity feed</div></div></div>
+<div class="pb">
+<div class="tl">
+{% for event in events[:25] %}
+<div class="ti"><div class="td td-g"></div><div class="tc"><img src="/snapshots/{{ event.snapshot_filename }}" loading="lazy"><div class="tc-info"><div class="tc-title">{{ event.event_type|replace('_',' ')|title }}</div><div class="tc-desc">{{ event.labels_detected|join(', ') }} &middot; {{ event.camera_name }} &middot; {{ "%.0f%%"|format(event.confidence*100) }}</div><div class="tc-time">{{ event.timestamp }}</div></div></div></div>
+{% endfor %}
+{% if not events %}<div class="empty">No activity yet</div>{% endif %}
+</div>
+</div>
+</div>
+
+<!-- DETECTIONS -->
+<div class="page" id="p-detect">
+<div class="ph"><div><h1>Detections</h1><div class="sub">All events from connected cameras</div></div><div style="display:flex;gap:5px"><a href="/export/csv" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ CSV</a><a href="/export/json" class="btn btn-s" style="text-decoration:none;font-size:10px">↓ JSON</a></div></div>
+<div class="pb">
+{% if events %}<div class="rg">{% for e in events[:30] %}<div class="rc" onclick="openLB('/snapshots/{{ e.snapshot_filename }}','{{ e.event_type|replace("_"," ")|title }} — {{ e.camera_name }}','{{ e.labels_detected|join(", ") }} &middot; {{ "%.0f%%"|format(e.confidence*100) }} confidence &middot; {{ e.timestamp }}',{{ e.id }})" style="cursor:pointer"><img src="/snapshots/{{ e.snapshot_filename }}" loading="lazy"><div class="rb"><h4>{{ e.camera_name }} #{{ e.id }}</h4><p>{{ e.timestamp }}</p><span class="dt dt-p">{{ e.event_type }}</span></div></div>{% endfor %}</div>{% else %}<div class="empty">No detections yet</div>{% endif %}
+</div>
+</div>
+
+<!-- LPR / PLATES -->
+<div class="page" id="p-lpr">
+<div class="ph"><div><h1>License Plates</h1><div class="sub">ANPR database, plate tracking, and access control</div></div></div>
+<div class="pb">
+<div class="sg" id="lpr-stats">
+<div class="sc green"><div class="sv" id="lpr-known">0</div><div class="sl">Known Plates</div></div>
+<div class="sc blue"><div class="sv" id="lpr-sightings">0</div><div class="sl">Total Sightings</div></div>
+<div class="sc orange"><div class="sv" id="lpr-unknown">0</div><div class="sl">Unknown Recent</div></div>
+</div>
+
+<div style="margin-bottom:20px">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Add Known Plate</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;max-width:640px">
+<input class="inp" id="lpr-plate" placeholder="Plate (e.g. AB12 CDE)" style="width:130px;text-transform:uppercase">
+<input class="inp" id="lpr-owner" placeholder="Owner name" style="flex:1;min-width:120px">
+<select class="inp" id="lpr-group"><option value="whitelist">Whitelist</option><option value="blacklist">Blacklist</option><option value="staff">Staff</option><option value="visitor">Visitor</option><option value="vip">VIP</option></select>
+<input class="inp" id="lpr-vehicle" placeholder="Vehicle (e.g. Blue BMW 3 Series)" style="flex:1;min-width:140px">
+<button class="btn" onclick="addPlate()">Add</button>
+</div>
+</div>
+
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Database</div>
+<div id="lpr-list"></div>
+
+<div style="margin-top:24px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Recent Sightings</div>
+<div id="lpr-log"></div>
+</div>
+</div>
+
+<!-- PLACEHOLDER PAGES -->
+<div class="page" id="p-analytics"><div class="ph"><div><h1>Analytics</h1><div class="sub">Counting, heatmaps, and traffic insights</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" id="an-p">0</div><div class="sl">People Now</div></div><div class="sc blue"><div class="sv" id="an-t">0</div><div class="sl">Today Total</div></div><div class="sc orange"><div class="sv">—</div><div class="sl">Peak Hour</div></div><div class="sc purple"><div class="sv">0</div><div class="sl">Speed Alerts</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">Footfall</div><svg width="100%" height="120" viewBox="0 0 400 120" preserveAspectRatio="none"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="0,100 40,85 80,70 120,55 160,65 200,40 240,50 280,30 320,35 360,20 400,25" opacity=".5"/></svg></div><div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">Heatmap</div><canvas id="hm" width="128" height="96" style="width:100%;height:100px;border-radius:6px;background:var(--elevated)"></canvas></div></div></div></div>
+<div class="page" id="p-live"><div class="ph"><div><h1>Live View</h1><div class="sub">Multi-camera monitoring</div></div></div><div class="pb"><div id="lv" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px"></div></div></div>
+<div class="page" id="p-cameras"><div class="ph"><div><h1>Cameras</h1><div class="sub">Manage feeds — Hikvision, UniFi, ONVIF, Scrypted</div></div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap;max-width:600px;margin-bottom:16px"><input class="inp" id="cn" placeholder="Name" style="flex:1;min-width:100px"><input class="inp" id="cu" placeholder="RTSP URL" style="flex:2;min-width:180px"><select class="inp" id="ct"><option value="hikvision">Hikvision</option><option value="unifi_rtsps">UniFi RTSPS</option><option value="unifi_rtsp">UniFi RTSP</option><option value="dahua">Dahua/Amcrest</option><option value="reolink">Reolink</option><option value="axis">Axis</option><option value="generic_onvif">ONVIF</option><option value="scrypted">Scrypted</option></select><button class="btn" onclick="addCam()">Add</button></div><div id="cl"></div></div></div>
+<div class="page" id="p-zones"><div class="ph"><div><h1>Zones</h1><div class="sub">Detection, exclusion, counting, speed limits</div></div></div><div class="pb"><div class="zone-tb"><select class="inp" id="zt"><option value="detection">Detection</option><option value="exclusion">Exclusion</option><option value="counting_line">Counting Line</option><option value="speed_limit">Speed Limit</option></select><input class="inp" id="zn" placeholder="Zone name" style="width:140px"><input type="color" id="zc" value="#4f8fff" style="width:28px;height:28px;border:none;border-radius:5px;cursor:pointer"><button class="btn" onclick="saveZone()">Save</button><button class="btn btn-s" onclick="clearZ()">Clear</button></div><div class="zone-wrap"><canvas id="zcanvas" width="960" height="540" class="zone-canvas"></canvas><div class="zone-list" id="zl"></div></div><div style="font-size:9px;color:var(--text-t);margin-top:6px">Click to add points &middot; Double-click to close &middot; Right-click to undo</div></div></div>
+<div class="page" id="p-alerts"><div class="ph"><div><h1>Alarm Manager</h1><div class="sub">Trigger → Scope → Schedule → Action</div></div><button class="btn" onclick="document.getElementById('new-rule-form').style.display='block'">+ New Rule</button></div><div class="pb">
+<!-- New Rule Builder -->
+<div id="new-rule-form" style="display:none;max-width:560px;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)">
+<div style="font-size:13px;font-weight:700;margin-bottom:12px">Create Alarm Rule</div>
+<input class="inp" id="ar-name" placeholder="Rule name (e.g. After-hours intrusion)" style="width:100%;margin-bottom:8px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+<div><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">TRIGGER</div><select class="inp" id="ar-trigger" style="width:100%"><option value="person_detected">👤 Person Detected</option><option value="vehicle_detected">🚗 Vehicle Detected</option><option value="animal_detected">🦊 Animal Detected</option><option value="any_motion">⚡ Any Motion</option><option value="zone_entry">🚧 Zone Entry</option><option value="speed_violation">🏎️ Speed Violation</option><option value="dwell_exceeded">⏱️ Dwell Exceeded</option><option value="plate_unknown">🔢 Unknown Plate</option><option value="plate_blacklist">🚫 Blacklisted Plate</option><option value="occupancy_high">👥 High Occupancy</option><option value="anomaly">📊 Anomaly</option></select></div>
+<div><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">SCHEDULE</div><select class="inp" id="ar-schedule" style="width:100%"><option value="always">Always</option><option value="business_hours">Business Hours</option><option value="after_hours">After Hours</option><option value="overnight">Overnight (9pm-6am)</option><option value="weekends">Weekends</option></select></div>
+</div>
+<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">ACTIONS (select multiple)</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-push" checked> 📱 Push</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-email"> 📧 Email</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-webhook"> 🔗 Webhook</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-escalate"> 🚨 Escalate</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-clip"> 🎬 Save Clip</label>
+</div></div>
+<div style="display:flex;gap:6px"><button class="btn" onclick="createAlarmRule()">Create Rule</button><button class="btn btn-s" onclick="document.getElementById('new-rule-form').style.display='none'">Cancel</button></div>
+</div>
+<!-- Rules List -->
+<div id="alarm-rules-list"></div>
+<!-- Webhook Config -->
+<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Webhook Endpoint</div><div style="display:flex;gap:6px;max-width:400px"><input class="inp" id="wh" placeholder="https://hooks.slack.com/..." style="flex:1;font-size:11px"><button class="btn btn-s" onclick="testWH()" style="font-size:10px">Test</button></div><div id="whr" style="font-size:10px;margin-top:4px;display:none"></div></div>
+</div></div>
+<div class="page" id="p-analyse"><div class="ph"><div><h1>Analyse</h1><div class="sub">Upload video for instant AI detection</div></div></div><div class="pb">
+<div class="drop-zone" style="max-width:500px;padding:36px 24px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:center;transition:.15s;position:relative" id="dz"><input type="file" id="fi" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer"><h3 style="font-size:13px;font-weight:600;margin-bottom:3px">Drop video here</h3><p style="font-size:11px;color:var(--text-t)">MP4, MOV, AVI</p></div>
+<div id="ap" style="display:none;margin-top:12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="display:flex;align-items:center;gap:8px"><div class="skeleton" style="width:16px;height:16px;border-radius:50%"></div><span style="font-size:12px;color:var(--text-s)">Analysing video with YOLO11m…</span></div></div>
+<!-- Results stay visible -->
+<div id="ar-summary" style="display:none;margin-top:16px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"></div>
+<div id="ar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px;justify-items:center"></div>
+<!-- Past analyses -->
+<div id="ar-history" style="margin-top:28px"></div>
+</div></div>
+<div class="page" id="p-cases"><div class="ph"><div><h1>Cases</h1><div class="sub">Incident reports and investigations</div></div><button class="btn" onclick="document.getElementById('ncf').style.display='block'">+ New Case</button></div><div class="pb"><div id="ncf" style="display:none;max-width:420px;margin-bottom:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"><input class="inp" id="cti" placeholder="Case title" style="width:100%;margin-bottom:6px"><textarea class="inp" id="cde" placeholder="Description" style="width:100%;height:60px;resize:vertical;margin-bottom:8px"></textarea><div style="display:flex;gap:6px"><button class="btn" onclick="mkCase()">Create</button><button class="btn btn-s" onclick="document.getElementById('ncf').style.display='none'">Cancel</button></div></div><div id="csl"></div></div></div>
+<div class="page" id="p-health"><div class="ph"><div><h1>System Health</h1><div class="sub">Processing status and resources</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" style="color:var(--green)">Online</div><div class="sl">Status</div></div><div class="sc blue"><div class="sv">YOLO11m</div><div class="sl">Model</div></div><div class="sc purple"><div class="sv" id="he">—</div><div class="sl">Events</div></div><div class="sc orange"><div class="sv" id="hs">—</div><div class="sl">Snapshots</div></div><div class="sc cyan"><div class="sv" id="hp">0</div><div class="sl">Pipelines</div></div></div><div id="hd" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:400px"></div></div></div>
+<div class="page" id="p-settings"><div class="ph"><div><h1>Settings</h1><div class="sub">Thresholds, model, storage</div></div></div><div class="pb"><div style="max-width:440px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Detection Thresholds</div><div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">People</span><input type="range" min="10" max="90" value="45" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">45%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Vehicles</span><input type="range" min="10" max="90" value="30" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">30%</span></div><div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;min-width:60px">Animals</span><input type="range" min="10" max="90" value="25" style="flex:1;accent-color:var(--accent)"><span style="font-size:11px;color:var(--text-s)">25%</span></div></div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Supported Cameras</div><div style="font-size:12px;color:var(--text-s);line-height:1.8;margin-bottom:24px">Hikvision &middot; UniFi Protect (RTSPS/RTSP) &middot; Dahua/Amcrest &middot; Reolink &middot; Axis &middot; ONVIF &middot; Scrypted (HomeKit/Ring/Nest)</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:10px">Storage</div><button class="btn btn-s" onclick="fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>alert('Cleaned '+d.deleted+' events'))">Clean Up Old Events</button></div></div></div>
+</div>
+
+<!-- COMMAND PALETTE -->
+<div class="cmd-palette" id="cmdPalette" onclick="if(event.target===this)closeCmd()">
+<div class="cmd-box">
+<input class="cmd-input" id="cmdInput" placeholder="Search pages, actions, events…" oninput="filterCmd(this.value)" onkeydown="cmdKeydown(event)">
+<div class="cmd-results" id="cmdResults"></div>
+<div class="cmd-footer"><span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> select</span><span><kbd>esc</kbd> close</span></div>
+</div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- KEYBOARD HINT -->
+<div class="kb-hint" id="kbHint">⌘K to search anywhere</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLB()">
+<button class="lightbox-close" onclick="closeLB()">×</button>
+<div class="lightbox-content" id="lb-content"></div>
+</div>
+
+<script>
+// Command Palette (Cmd+K)
+const cmdItems=[
+  {label:'Dashboard',action:()=>nav('dash'),icon:'grid',section:'Pages'},
+  {label:'Analytics',action:()=>nav('analytics'),icon:'chart',section:'Pages'},
+  {label:'Live View',action:()=>nav('live'),icon:'monitor',section:'Pages'},
+  {label:'Cameras',action:()=>nav('cameras'),icon:'camera',section:'Pages'},
+  {label:'Zones',action:()=>nav('zones'),icon:'grid',section:'Pages'},
+  {label:'Detections',action:()=>nav('detect'),icon:'eye',section:'Pages'},
+  {label:'Plates (LPR)',action:()=>nav('lpr'),icon:'car',section:'Pages'},
+  {label:'Ask Vigil',action:()=>nav('ask'),icon:'search',section:'Pages'},
+  {label:'Timeline',action:()=>nav('timeline'),icon:'clock',section:'Pages'},
+  {label:'Alarm Manager',action:()=>nav('alerts'),icon:'bell',section:'Pages'},
+  {label:'Analyse Video',action:()=>nav('analyse'),icon:'video',section:'Pages'},
+  {label:'Cases',action:()=>nav('cases'),icon:'file',section:'Pages'},
+  {label:'Monitoring Station',action:()=>nav('monitor'),icon:'shield',section:'Pages'},
+  {label:'System Health',action:()=>nav('health'),icon:'pulse',section:'Pages'},
+  {label:'Settings',action:()=>nav('settings'),icon:'gear',section:'Pages'},
+  {label:'Export CSV',action:()=>window.open('/export/csv'),icon:'download',section:'Actions'},
+  {label:'Export JSON',action:()=>window.open('/export/json'),icon:'download',section:'Actions'},
+  {label:'Clean Up Events',action:()=>{fetch('/events/cleanup?keep=1000',{method:'POST'}).then(r=>r.json()).then(d=>toast('Cleaned '+d.deleted+' events','success'))},icon:'trash',section:'Actions'},
+  {label:'Search people',action:()=>{nav('ask');setTimeout(()=>{document.getElementById('sq').value='show me all people';doSearch()},200)},icon:'search',section:'Quick Search'},
+  {label:'Search vehicles',action:()=>{nav('ask');setTimeout(()=>{document.getElementById('sq').value='vehicles';doSearch()},200)},icon:'search',section:'Quick Search'},
+  {label:'Search animals',action:()=>{nav('ask');setTimeout(()=>{document.getElementById('sq').value='animals';doSearch()},200)},icon:'search',section:'Quick Search'},
+];
+let cmdSelected=0;
+
+function openCmd(){
+  document.getElementById('cmdPalette').classList.add('show');
+  document.getElementById('cmdInput').value='';
+  document.getElementById('cmdInput').focus();
+  cmdSelected=0;
+  filterCmd('');
+}
+function closeCmd(){document.getElementById('cmdPalette').classList.remove('show')}
+function filterCmd(q){
+  const filtered=q?cmdItems.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())):cmdItems;
+  cmdSelected=0;
+  const el=document.getElementById('cmdResults');
+  el.innerHTML=filtered.map((item,i)=>`<div class="cmd-item${i===0?' selected':''}" onmouseenter="cmdSelected=${i};highlightCmd()" onclick="runCmd(${cmdItems.indexOf(item)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/></svg><span class="cmd-label">${item.label}</span><span class="cmd-hint">${item.section}</span></div>`).join('');
+}
+function highlightCmd(){
+  document.querySelectorAll('.cmd-item').forEach((el,i)=>el.classList.toggle('selected',i===cmdSelected));
+}
+function cmdKeydown(e){
+  const items=document.querySelectorAll('.cmd-item');
+  if(e.key==='ArrowDown'){e.preventDefault();cmdSelected=Math.min(cmdSelected+1,items.length-1);highlightCmd()}
+  else if(e.key==='ArrowUp'){e.preventDefault();cmdSelected=Math.max(cmdSelected-1,0);highlightCmd()}
+  else if(e.key==='Enter'){e.preventDefault();items[cmdSelected]?.click()}
+  else if(e.key==='Escape'){closeCmd()}
+}
+function runCmd(idx){cmdItems[idx].action();closeCmd()}
+
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCmd()}
+  if(e.key==='Escape'){closeCmd();closeLB()}
+});
+
+// Show keyboard hint briefly on first visit
+if(!localStorage.getItem('vigil_visited')){
+  setTimeout(()=>{document.getElementById('kbHint').classList.add('show');setTimeout(()=>document.getElementById('kbHint').classList.remove('show'),4000)},2000);
+  localStorage.setItem('vigil_visited','1');
+}
+
+// Toast Notifications
+function toast(message,type='info',title=''){
+  const container=document.getElementById('toasts');
+  const icons={success:'✓',warning:'⚠',error:'✕',info:'ℹ'};
+  const el=document.createElement('div');
+  el.className='toast';
+  el.innerHTML=`<div class="toast-icon ${type}">${icons[type]||'ℹ'}</div><div class="toast-body">${title?`<div class="toast-title">${title}</div>`:''}${message?`<div class="toast-msg">${message}</div>`:''}</div>`;
+  container.appendChild(el);
+  setTimeout(()=>{el.classList.add('exit');setTimeout(()=>el.remove(),200)},4000);
+}
+
+// Lightbox
+function openLB(snapshotUrl, title, meta, eventId){
+  const crop = eventId ? `/detections/${eventId}/crop` : '';
+  document.getElementById('lb-content').innerHTML=`
+    <div class="lightbox-zoom">
+      <div><img src="${snapshotUrl}" alt="Full frame"></div>
+      <div><img src="${crop||snapshotUrl}" alt="Detection crop" style="object-fit:contain;background:var(--bg)"></div>
+    </div>
+    <div class="lightbox-body">
+      <div class="lightbox-title">${title}</div>
+      <div class="lightbox-meta">${meta}</div>
+    </div>`;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLB(){document.getElementById('lightbox').classList.remove('show')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
+
+function nav(p){
+  document.querySelectorAll('.page.a').forEach(x=>{x.style.opacity='0';x.style.transform='translateY(6px)'});
+  setTimeout(()=>{
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('a'));
+    document.querySelectorAll('.ni').forEach(x=>x.classList.remove('a'));
+    const el=document.getElementById('p-'+p);
+    if(el){el.classList.add('a');el.style.opacity='';el.style.transform=''}
+    const ni=document.querySelector('[data-p="'+p+'"]');
+    if(ni)ni.classList.add('a');
+  },100);
+}
+
+// Stats
+fetch('/stats').then(r=>r.json()).then(d=>{document.getElementById('an-t').textContent=d.total_events||0;}).catch(()=>{});
+
+// Search
+let sTO;function dSearch(){clearTimeout(sTO);sTO=setTimeout(doSearch,350)}
+function qSearch(t){document.getElementById('sq').value=t;doSearch()}
+function doSearch(){const q=document.getElementById('sq').value.trim();if(!q){document.getElementById('sr').innerHTML='';document.getElementById('sr-info').textContent='';return}
+fetch('/events/search?q='+encodeURIComponent(q)+'&limit=30').then(r=>r.json()).then(d=>{document.getElementById('sr-info').textContent=d.count+' results';document.getElementById('sr').innerHTML=d.results.map((e,i)=>{const desc=d.descriptions&&d.descriptions[i]?d.descriptions[i]:e.camera_name;return`<div class="rc" onclick="openLB('/snapshots/${e.snapshot_filename}','${desc.replace(/'/g,"\\'")}','${e.timestamp} &middot; ${e.camera_name}',${e.id})" style="cursor:pointer"><img src="/snapshots/${e.snapshot_filename}" loading="lazy"><div class="rb"><h4>${desc}</h4><p>${e.timestamp}</p></div></div>`}).join('')})}
+
+// Cameras
+function loadCams(){fetch('/cameras').then(r=>r.json()).then(c=>{const el=document.getElementById('cl');if(!c.length){el.innerHTML='<div class="empty">No cameras. Add one above.</div>';return}el.innerHTML=c.map(x=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px"><div style="flex:1"><div style="font-size:12px;font-weight:600">${x.name}</div><div style="font-size:10px;color:var(--text-t);word-break:break-all">${x.url}</div></div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--accent-g);color:var(--accent);text-transform:uppercase">${x.type}</span><button onclick="delCam('${x.id}')" style="font-size:10px;color:var(--text-t);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer">×</button></div>`).join('')})}
+function addCam(){const n=document.getElementById('cn').value.trim(),u=document.getElementById('cu').value.trim(),t=document.getElementById('ct').value;if(!n||!u)return;fetch('/cameras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,url:u,type:t})}).then(()=>{document.getElementById('cn').value='';document.getElementById('cu').value='';loadCams()})}
+function delCam(id){fetch('/cameras/'+id,{method:'DELETE'}).then(()=>loadCams())}
+loadCams();
+
+// Live
+document.querySelector('[data-p="live"]').addEventListener('click',()=>{fetch('/cameras').then(r=>r.json()).then(c=>{const el=document.getElementById('lv');if(!c.length){el.innerHTML='<div class="empty">No cameras configured</div>';return}el.innerHTML=c.map(x=>x.type.includes('unifi')?`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden"><iframe src="${x.url}" style="width:100%;aspect-ratio:16/9;border:none" allow="autoplay;fullscreen;encrypted-media" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" loading="lazy"></iframe><div style="padding:8px 10px;font-size:11px;font-weight:600;border-top:1px solid var(--border);display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--green)"></span>${x.name}</div></div>`:`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center"><div><div style="font-size:12px;font-weight:600">${x.name}</div><div style="font-size:10px;color:var(--text-t);margin-top:4px">RTSP Processing</div></div></div>`).join('')})});
+
+// Zones
+let zPts=[],zSaved=[];const zC=document.getElementById('zcanvas'),zCtx=zC?zC.getContext('2d'):null;
+if(zC){zC.addEventListener('click',e=>{const r=zC.getBoundingClientRect();zPts.push({x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height});drawZ()});zC.addEventListener('dblclick',e=>{e.preventDefault();if(zPts.length>=3)saveZone()});zC.addEventListener('contextmenu',e=>{e.preventDefault();zPts.pop();drawZ()})}
+function drawZ(){if(!zCtx)return;const w=zC.width,h=zC.height;zCtx.clearRect(0,0,w,h);zSaved.forEach(z=>{if(z.points.length<2)return;zCtx.beginPath();zCtx.moveTo(z.points[0].x*w,z.points[0].y*h);z.points.slice(1).forEach(p=>zCtx.lineTo(p.x*w,p.y*h));zCtx.closePath();zCtx.fillStyle=z.color+'18';zCtx.fill();zCtx.strokeStyle=z.color;zCtx.lineWidth=2;zCtx.stroke();zCtx.fillStyle=z.color;zCtx.font='11px sans-serif';zCtx.fillText(z.name,z.points[0].x*w+3,z.points[0].y*h+12)});if(zPts.length){const c=document.getElementById('zc').value;zCtx.beginPath();zCtx.moveTo(zPts[0].x*zC.width,zPts[0].y*zC.height);zPts.slice(1).forEach(p=>zCtx.lineTo(p.x*zC.width,p.y*zC.height));zCtx.strokeStyle=c;zCtx.lineWidth=2;zCtx.setLineDash([4,4]);zCtx.stroke();zCtx.setLineDash([]);zPts.forEach(p=>{zCtx.beginPath();zCtx.arc(p.x*zC.width,p.y*zC.height,3,0,Math.PI*2);zCtx.fillStyle=c;zCtx.fill()})}}
+function saveZone(){if(zPts.length<3)return;const n=document.getElementById('zn').value.trim()||'Zone '+(zSaved.length+1);fetch('/zones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,zone_type:document.getElementById('zt').value,points:zPts,color:document.getElementById('zc').value,config:{},camera_id:'',enabled:true})}).then(r=>r.json()).then(()=>{zPts=[];document.getElementById('zn').value='';loadZ()})}
+function clearZ(){zPts=[];drawZ()}
+function loadZ(){fetch('/zones').then(r=>r.json()).then(z=>{zSaved=z;drawZ();document.getElementById('zl').innerHTML=z.length?z.map(x=>`<div class="zi"><h4><span class="zd" style="background:${x.color}"></span>${x.name}</h4><p>${x.zone_type} &middot; ${x.points.length} pts</p></div>`).join(''):'<div style="font-size:10px;color:var(--text-t);padding:12px">No zones. Draw on canvas.</div>'})}
+document.querySelector('[data-p="zones"]').addEventListener('click',()=>setTimeout(loadZ,50));
+
+// Analyse
+const dz=document.getElementById('dz'),fi=document.getElementById('fi');
+['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.style.borderColor='var(--accent)'}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.style.borderColor=''}));
+dz.addEventListener('drop',ev=>{if(ev.dataTransfer.files[0])upload(ev.dataTransfer.files[0])});
+fi.addEventListener('change',()=>{if(fi.files[0])upload(fi.files[0])});
+function upload(f){
+  document.getElementById('ap').style.display='block';
+  document.getElementById('ar').innerHTML='';
+  document.getElementById('ar-summary').style.display='none';
+  const fd=new FormData();fd.append('video',f);
+  fd.append('people_threshold','0.45');fd.append('vehicles_threshold','0.30');fd.append('animals_threshold','0.25');
+  fd.append('detect_people','true');fd.append('detect_vehicles','true');fd.append('detect_animals','true');
+  fetch('/analyse',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    document.getElementById('ap').style.display='none';
+    showAnalysisResults(d, f.name);
+    loadAnalysisHistory();
+  }).catch(()=>{document.getElementById('ap').style.display='none'});
+}
+
+function showAnalysisResults(d, filename) {
+  const cats = d.category_summary || {};
+  const total = d.frames.reduce((s,f)=>s+f.detections.length,0);
+  const plates = d.plates_detected || [];
+
+  // Summary card
+  const sum = document.getElementById('ar-summary');
+  sum.style.display = 'block';
+  sum.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:700">${filename||'Video Analysis'}</div>
+      <div style="font-size:10px;color:var(--text-t)">${d.frames_analysed} frames analysed</div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">${cats.people||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">People</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${cats.vehicles||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Vehicles</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--orange)">${cats.animals||0}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Animals</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700">${total}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Total</div></div>
+      ${plates.length ? `<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--purple)">${plates.length}</div><div style="font-size:9px;color:var(--text-t);text-transform:uppercase">Plates</div></div>` : ''}
+    </div>
+    ${plates.length ? `<div style="margin-top:10px;font-size:11px;color:var(--text-s)">Plates: ${plates.map(p=>`<span style="font-family:monospace;font-weight:700;letter-spacing:.08em;padding:2px 6px;background:var(--purple-g);border-radius:3px;margin-right:4px">${p.plate}</span>`).join('')}</div>` : ''}
+  `;
+
+  // Detection frames (centered, clickable)
+  const grid = document.getElementById('ar');
+  const framesWithDet = d.frames.filter(f=>f.detections.length);
+  grid.innerHTML = framesWithDet.map(f => {
+    const tags = f.detections.map(x => `<span class="dt dt-${x.category==='people'?'p':x.category==='vehicles'?'v':'a'}">${x.label} ${(x.confidence*100).toFixed(0)}%${x.plate?' 🔢'+x.plate:''}</span>`).join('');
+    return `<div class="rc" onclick="openLB('/analysis-snapshots/${f.snapshot_filename}','Frame ${f.frame_number}','${f.detections.map(x=>x.label+' '+(x.confidence*100).toFixed(0)+'%').join(', ')}',0)" style="cursor:pointer;max-width:360px;width:100%"><img src="/analysis-snapshots/${f.snapshot_filename}" loading="lazy" style="aspect-ratio:16/10"><div class="rb"><h4 style="font-size:11px">Frame ${f.frame_number}</h4>${tags}</div></div>`;
+  }).join('');
+}
+
+// Load past analyses
+function loadAnalysisHistory(){
+  fetch('/analysis/history').then(r=>r.json()).then(history=>{
+    const el=document.getElementById('ar-history');
+    if(!history.length){el.innerHTML='';return;}
+    el.innerHTML=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Previous Analyses</div>`+
+      history.slice(-10).reverse().map(h=>{
+        const cats=h.category_summary||{};
+        const dets=h.frames_with_detections||[];
+        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px;cursor:pointer" onclick="loadPastAnalysis(${h.id})"><div style="flex:1"><div style="font-size:12px;font-weight:600">${h.filename}</div><div style="font-size:10px;color:var(--text-t)">${h.timestamp.slice(0,16)} &middot; ${h.frames_analysed} frames &middot; ${dets.length} with detections</div></div><div style="display:flex;gap:8px;font-size:11px;font-weight:700"><span style="color:var(--green)">${cats.people||0}P</span><span style="color:var(--accent)">${cats.vehicles||0}V</span><span style="color:var(--orange)">${cats.animals||0}A</span></div></div>`;
+      }).join('');
+  });
+}
+
+function loadPastAnalysis(id){
+  fetch('/analysis/'+id).then(r=>r.json()).then(d=>{
+    showAnalysisResults({
+      frames_analysed:d.frames_analysed,
+      category_summary:d.category_summary,
+      object_summary:d.object_summary,
+      plates_detected:d.plates_detected||[],
+      frames:d.frames_with_detections||[]
+    }, d.filename);
+  });
+}
+
+// Load history on page visit
+document.querySelector('[data-p="analyse"]').addEventListener('click',()=>setTimeout(loadAnalysisHistory,50));
+
+// Cases
+function mkCase(){const t=document.getElementById('cti').value.trim(),d=document.getElementById('cde').value.trim();if(!t)return;fetch('/cases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:d,event_ids:[]})}).then(()=>{document.getElementById('cti').value='';document.getElementById('cde').value='';document.getElementById('ncf').style.display='none';loadC()})}
+function loadC(){fetch('/cases').then(r=>r.json()).then(c=>{document.getElementById('csl').innerHTML=c.length?c.map(x=>`<div class="rule"><div class="rule-icon" style="background:var(--accent-g);color:var(--accent)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="rule-info"><div class="rule-name">${x.title}</div><div class="rule-desc">${x.description||'No description'} &middot; ${x.event_ids.length} events</div></div><div class="rule-st">${x.status}</div></div>`).join(''):'<div class="empty">No cases yet</div>'})}
+document.querySelector('[data-p="cases"]').addEventListener('click',()=>setTimeout(loadC,50));
+
+// Health
+document.querySelector('[data-p="health"]').addEventListener('click',()=>{fetch('/system/health').then(r=>r.json()).then(d=>{document.getElementById('he').textContent=d.total_events;document.getElementById('hs').textContent=d.snapshots_count;document.getElementById('hp').textContent=d.active_pipelines;document.getElementById('hd').innerHTML=`<div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Database</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.database_size_mb} MB</div></div><div style="padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs)"><div style="font-size:10px;color:var(--text-t)">Snapshots</div><div style="font-size:16px;font-weight:700;margin-top:3px">${d.snapshots_size_mb} MB</div></div>`})});
+
+// Monitoring Station
+function loadMonitor(){
+  fetch('/monitoring').then(r=>r.json()).then(d=>{
+    document.getElementById('mon-critical').textContent=d.critical_count||0;
+    document.getElementById('mon-high').textContent=d.high_count||0;
+    document.getElementById('mon-pending').textContent=d.total_pending||0;
+    const armed=Object.values(d.sites||{}).filter(s=>s.arm_state!=='disarmed').length;
+    document.getElementById('mon-sites').textContent=armed;
+
+    const q=document.getElementById('mon-queue');
+    const events=d.recent_events||[];
+    if(!events.length){q.innerHTML='<div class="empty" style="padding:20px">No pending events — all clear</div>';} 
+    else{q.innerHTML=events.map(e=>{
+      const pc={'critical':'var(--red)','high':'var(--orange)','medium':'var(--accent)','low':'var(--text-s)','info':'var(--text-t)'};
+      const color=pc[e.priority]||'var(--text-t)';
+      return`<div class="rule" style="border-left:3px solid ${color}"><div class="rule-info"><div class="rule-name">${e.event_type.replace(/_/g,' ').replace(/\\b\\w/g,l=>l.toUpperCase())} — ${e.camera_name}</div><div class="rule-desc">${e.timestamp.slice(11,19)} &middot; ${(e.confidence*100).toFixed(0)}% &middot; ${e.priority.toUpperCase()}</div></div><div style="display:flex;gap:4px"><button class="btn" style="font-size:9px;padding:4px 8px;background:var(--green)" onclick="monAction(${e.id},'acknowledge')">✓</button><button class="btn" style="font-size:9px;padding:4px 8px;background:var(--red)" onclick="monAction(${e.id},'escalate')">⚠</button><button class="btn btn-s" style="font-size:9px;padding:4px 8px" onclick="monAction(${e.id},'dismiss')">✕</button></div></div>`}).join('')}
+
+    const sites=d.sites||{};
+    const sl=document.getElementById('mon-sites-list');
+    const siteKeys=Object.keys(sites);
+    sl.innerHTML=siteKeys.length?siteKeys.map(id=>{
+      const s=sites[id];
+      const armColor={'armed':'var(--red)','armed_away':'var(--orange)','armed_home':'var(--green)','disarmed':'var(--text-t)'};
+      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px;font-size:11px"><span>${id.slice(0,8)}</span><span style="font-weight:700;color:${armColor[s.arm_state]||'var(--text-t)'}">${s.arm_state.toUpperCase()}</span></div>`}).join(''):'<div style="font-size:10px;color:var(--text-t);padding:8px">No sites configured</div>';
+
+    const audit=d.recent_audit||[];
+    document.getElementById('mon-audit').innerHTML=audit.slice(0,10).map(a=>`<div style="font-size:10px;color:var(--text-t);padding:4px 0;border-bottom:1px solid var(--border)">${a.timestamp.slice(11,19)} — ${a.action} by ${a.operator}</div>`).join('')||'<div style="font-size:10px;color:var(--text-t)">No activity</div>';
+  });
+}
+function monAction(id,action){
+  fetch('/monitoring/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({queue_id:id,action,operator:'admin'})}).then(()=>loadMonitor());
+}
+document.querySelector('[data-p="monitor"]').addEventListener('click',()=>setTimeout(loadMonitor,50));
+
+// LPR
+function loadLPR(){
+  fetch('/lpr/plates').then(r=>r.json()).then(d=>{
+    const stats=d.stats||{};
+    document.getElementById('lpr-known').textContent=stats.total_known_plates||0;
+    document.getElementById('lpr-sightings').textContent=stats.total_sightings||0;
+    document.getElementById('lpr-unknown').textContent=stats.recent_unknown_count||0;
+    const plates=d.plates||[];
+    document.getElementById('lpr-list').innerHTML=plates.length?plates.map(p=>{
+      const gc={'whitelist':'var(--green)','blacklist':'var(--red)','staff':'var(--accent)','visitor':'var(--orange)','vip':'var(--purple)'};
+      const color=gc[p.group]||'var(--text-s)';
+      return`<div class="rule"><div class="rule-icon" style="background:${color}15;color:${color}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div><div class="rule-info"><div class="rule-name" style="font-family:monospace;letter-spacing:.1em">${p.plate}</div><div class="rule-desc">${p.owner||'Unknown'} &middot; ${p.vehicle||''} &middot; Seen ${p.seen_count||0}x${p.last_seen?' &middot; Last: '+p.last_seen.slice(0,10):''}</div></div><div style="font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:${color}15;color:${color}">${p.group}</div></div>`
+    }).join(''):'<div class="empty">No plates in database. Add one above.</div>';
+  });
+  fetch('/lpr/log?limit=20').then(r=>r.json()).then(log=>{
+    document.getElementById('lpr-log').innerHTML=log.length?log.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:4px"><span style="font-family:monospace;font-size:13px;font-weight:700;letter-spacing:.1em;min-width:80px">${e.plate}</span><span style="flex:1;font-size:10px;color:var(--text-t)">${e.camera} &middot; ${e.timestamp.slice(0,19)}</span><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:${e.known?'var(--green-g)':'var(--red-g)'};color:${e.known?'var(--green)':'var(--red)'}">${e.known?e.group:'UNKNOWN'}</span></div>`).join(''):'<div class="empty">No plate sightings yet</div>';
+  });
+}
+function addPlate(){
+  const plate=document.getElementById('lpr-plate').value.trim();
+  const owner=document.getElementById('lpr-owner').value.trim();
+  const group=document.getElementById('lpr-group').value;
+  const vehicle=document.getElementById('lpr-vehicle').value.trim();
+  if(!plate)return;
+  fetch('/lpr/plates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plate_number:plate,owner,group,vehicle_description:vehicle})}).then(()=>{
+    document.getElementById('lpr-plate').value='';document.getElementById('lpr-owner').value='';document.getElementById('lpr-vehicle').value='';loadLPR();
+  });
+}
+document.querySelector('[data-p="lpr"]').addEventListener('click',()=>setTimeout(loadLPR,50));
+
+// Alarm Manager
+function loadAlarmRules(){
+  fetch('/alarm-manager').then(r=>r.json()).then(d=>{
+    const rules=d.rules||[];
+    const list=document.getElementById('alarm-rules-list');
+    if(!rules.length){list.innerHTML='<div class="empty" style="padding:20px">No alarm rules configured. Click + New Rule to create one.</div>';return;}
+    const triggers=d.trigger_types||{};
+    list.innerHTML=rules.map(r=>{
+      const t=triggers[r.trigger]||{icon:'⚡',label:r.trigger};
+      const actIcons=r.actions.map(a=>({push_notification:'📱',email:'📧',webhook:'🔗',sms:'💬',escalate:'🚨',save_clip:'🎬'}[a]||'•')).join(' ');
+      return`<div class="rule"><div class="rule-icon" style="background:${r.enabled?'var(--green-g)':'var(--card)'};color:${r.enabled?'var(--green)':'var(--text-t)'};font-size:14px">${t.icon}</div><div class="rule-info"><div class="rule-name">${r.name}</div><div class="rule-desc">${t.label} &middot; ${r.schedule} &middot; ${actIcons} &middot; Triggered ${r.trigger_count||0}x</div></div><div style="display:flex;gap:4px;align-items:center"><button class="btn btn-s" style="font-size:9px;padding:3px 7px" onclick="toggleRule('${r.id}')">${r.enabled?'Disable':'Enable'}</button><button class="btn btn-s" style="font-size:9px;padding:3px 7px;color:var(--red)" onclick="deleteRule('${r.id}')">×</button></div></div>`
+    }).join('');
+  });
+}
+function createAlarmRule(){
+  const name=document.getElementById('ar-name').value.trim();
+  const trigger=document.getElementById('ar-trigger').value;
+  const schedule=document.getElementById('ar-schedule').value;
+  const actions=[];
+  if(document.getElementById('ar-act-push').checked)actions.push('push_notification');
+  if(document.getElementById('ar-act-email').checked)actions.push('email');
+  if(document.getElementById('ar-act-webhook').checked)actions.push('webhook');
+  if(document.getElementById('ar-act-escalate').checked)actions.push('escalate');
+  if(document.getElementById('ar-act-clip').checked)actions.push('save_clip');
+  if(!name){alert('Enter a rule name');return;}
+  fetch('/alarm-manager/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,trigger,scope:{cameras:'all'},schedule,actions})}).then(r=>r.json()).then(()=>{
+    document.getElementById('ar-name').value='';
+    document.getElementById('new-rule-form').style.display='none';
+    loadAlarmRules();
+  });
+}
+function toggleRule(id){fetch('/alarm-manager/rules/'+id+'/toggle',{method:'POST'}).then(()=>loadAlarmRules())}
+function deleteRule(id){fetch('/alarm-manager/rules/'+id,{method:'DELETE'}).then(()=>loadAlarmRules())}
+document.querySelector('[data-p="alerts"]').addEventListener('click',()=>setTimeout(loadAlarmRules,50));
+
+// Webhook
+function testWH(){const u=document.getElementById('wh').value.trim();if(!u)return;const r=document.getElementById('whr');r.style.display='block';r.style.color='var(--text-t)';r.textContent='Sending…';fetch('/notifications/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}).then(x=>x.json()).then(d=>{r.style.color=d.success?'var(--green)':'var(--red)';r.textContent=d.success?'✓ Delivered':'✗ Failed'})}
+
+// PWA
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+
+// Auto-refresh dashboard
+setInterval(()=>{if(document.getElementById('p-dash').classList.contains('a')){fetch('/stats').then(r=>r.json()).then(d=>{document.getElementById('ds-p').textContent=d.total_events||0}).catch(()=>{})}},5000);
+</script>
+</body>
+</html>
