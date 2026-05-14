@@ -18,6 +18,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.alarm_manager import (
+    create_alarm_rule, delete_alarm_rule, get_alarm_manager_config,
+    load_alarm_rules, toggle_alarm_rule, update_alarm_rule,
+)
 from app.anomaly import AnomalyDetector
 from app.monitoring import (
     action_event, add_event_to_queue, get_arm_state, get_monitoring_dashboard,
@@ -489,14 +493,34 @@ def analyse_video_file(
                     filtered.append(d)
 
             det_list = []
+            plates_found: list[dict[str, Any]] = []
             for d in filtered:
                 category = classify_label(d.label)
-                det_list.append({
+                det_entry: dict[str, Any] = {
                     "label": d.label,
                     "category": category,
                     "confidence": round(d.confidence, 3),
                     "bbox": list(d.bbox),
-                })
+                }
+
+                if d.label in VEHICLE_LABELS and d.confidence >= 0.3:
+                    try:
+                        from app.lpr import read_plate_from_vehicle_crop
+                        plate_results = read_plate_from_vehicle_crop(frame, d.bbox)
+                        if plate_results:
+                            best_plate = max(plate_results, key=lambda p: p["confidence"])
+                            det_entry["plate"] = best_plate["text"]
+                            det_entry["plate_confidence"] = best_plate["confidence"]
+                            plates_found.append({
+                                "plate": best_plate["text"],
+                                "confidence": best_plate["confidence"],
+                                "vehicle_label": d.label,
+                                "frame": frame_number,
+                            })
+                    except Exception:
+                        pass
+
+                det_list.append(det_entry)
                 object_counter[d.label] += 1
                 category_counter[category] += 1
 
@@ -512,13 +536,19 @@ def analyse_video_file(
                 "snapshot_filename": snapshot_path.name,
                 "snapshot_dir": str(output_dir),
                 "detections": det_list,
+                "plates": plates_found,
             })
+
+    all_plates = []
+    for f in frames_data:
+        all_plates.extend(f.get("plates", []))
 
     return {
         "total_frames": total_frames,
         "frames_analysed": len(frames_data),
         "object_summary": dict(object_counter),
         "category_summary": dict(category_counter),
+        "plates_detected": all_plates,
         "frames": frames_data,
     }
 
@@ -923,6 +953,49 @@ def recommendations(request: Request) -> list[dict[str, Any]]:
     """AI-generated recommendations based on patterns."""
     event_store: EventStore = request.app.state.event_store
     return get_recommendations(event_store)
+
+
+class AlarmRuleInput(BaseModel):
+    name: str
+    trigger: str
+    scope: dict[str, Any] = {}
+    schedule: str = "always"
+    actions: list[str] = []
+    config: dict[str, Any] = {}
+    enabled: bool = True
+
+
+@app.get("/alarm-manager")
+def alarm_manager() -> dict[str, Any]:
+    """Get full alarm manager config: triggers, actions, schedules, and rules."""
+    return get_alarm_manager_config()
+
+
+@app.get("/alarm-manager/rules")
+def list_alarm_rules() -> list[dict[str, Any]]:
+    return load_alarm_rules()
+
+
+@app.post("/alarm-manager/rules")
+def add_alarm_rule(data: AlarmRuleInput) -> dict[str, Any]:
+    return create_alarm_rule(
+        data.name, data.trigger, data.scope, data.schedule, data.actions, data.config, data.enabled
+    )
+
+
+@app.delete("/alarm-manager/rules/{rule_id}")
+def remove_alarm_rule(rule_id: str) -> dict[str, str]:
+    if delete_alarm_rule(rule_id):
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="Rule not found")
+
+
+@app.post("/alarm-manager/rules/{rule_id}/toggle")
+def toggle_rule(rule_id: str) -> dict[str, Any]:
+    result = toggle_alarm_rule(rule_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return result
 
 
 class ArmInput(BaseModel):

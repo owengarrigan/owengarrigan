@@ -322,7 +322,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font
 <div class="page" id="p-live"><div class="ph"><div><h1>Live View</h1><div class="sub">Multi-camera monitoring</div></div></div><div class="pb"><div id="lv" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px"></div></div></div>
 <div class="page" id="p-cameras"><div class="ph"><div><h1>Cameras</h1><div class="sub">Manage feeds — Hikvision, UniFi, ONVIF, Scrypted</div></div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap;max-width:600px;margin-bottom:16px"><input class="inp" id="cn" placeholder="Name" style="flex:1;min-width:100px"><input class="inp" id="cu" placeholder="RTSP URL" style="flex:2;min-width:180px"><select class="inp" id="ct"><option value="hikvision">Hikvision</option><option value="unifi_rtsps">UniFi RTSPS</option><option value="unifi_rtsp">UniFi RTSP</option><option value="dahua">Dahua/Amcrest</option><option value="reolink">Reolink</option><option value="axis">Axis</option><option value="generic_onvif">ONVIF</option><option value="scrypted">Scrypted</option></select><button class="btn" onclick="addCam()">Add</button></div><div id="cl"></div></div></div>
 <div class="page" id="p-zones"><div class="ph"><div><h1>Zones</h1><div class="sub">Detection, exclusion, counting, speed limits</div></div></div><div class="pb"><div class="zone-tb"><select class="inp" id="zt"><option value="detection">Detection</option><option value="exclusion">Exclusion</option><option value="counting_line">Counting Line</option><option value="speed_limit">Speed Limit</option></select><input class="inp" id="zn" placeholder="Zone name" style="width:140px"><input type="color" id="zc" value="#4f8fff" style="width:28px;height:28px;border:none;border-radius:5px;cursor:pointer"><button class="btn" onclick="saveZone()">Save</button><button class="btn btn-s" onclick="clearZ()">Clear</button></div><div class="zone-wrap"><canvas id="zcanvas" width="960" height="540" class="zone-canvas"></canvas><div class="zone-list" id="zl"></div></div><div style="font-size:9px;color:var(--text-t);margin-top:6px">Click to add points &middot; Double-click to close &middot; Right-click to undo</div></div></div>
-<div class="page" id="p-alerts"><div class="ph"><div><h1>Alerts</h1><div class="sub">Rules, schedules, and webhook notifications</div></div><button class="btn">+ New Rule</button></div><div class="pb"><div class="rule"><div class="rule-icon" style="background:var(--red-g);color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="rule-info"><div class="rule-name">Person in Restricted Area</div><div class="rule-desc">After hours (21:00–06:00) &middot; All cameras</div></div><div class="rule-st">Active</div></div><div class="rule"><div class="rule-icon" style="background:var(--orange-g);color:var(--orange)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="rule-info"><div class="rule-name">Speed Violation — Loading Bay</div><div class="rule-desc">Always &middot; Max 5mph &middot; Webhook → Slack</div></div><div class="rule-st">Active</div></div><div class="rule"><div class="rule-icon" style="background:var(--green-g);color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div><div class="rule-info"><div class="rule-name">After-Hours Motion</div><div class="rule-desc">Custom schedule (17:00–09:00 weekdays) &middot; Push + Email</div></div><div class="rule-st">Active</div></div><div style="margin-top:20px"><div style="font-size:11px;color:var(--text-t);margin-bottom:8px">Webhook Notifications</div><div style="display:flex;gap:6px;max-width:400px"><input class="inp" id="wh" placeholder="https://hooks.slack.com/..." style="flex:1;font-size:11px"><button class="btn btn-s" onclick="testWH()" style="font-size:10px">Test</button></div><div id="whr" style="font-size:10px;margin-top:4px;display:none"></div></div></div></div>
+<div class="page" id="p-alerts"><div class="ph"><div><h1>Alarm Manager</h1><div class="sub">Trigger → Scope → Schedule → Action</div></div><button class="btn" onclick="document.getElementById('new-rule-form').style.display='block'">+ New Rule</button></div><div class="pb">
+<!-- New Rule Builder -->
+<div id="new-rule-form" style="display:none;max-width:560px;margin-bottom:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)">
+<div style="font-size:13px;font-weight:700;margin-bottom:12px">Create Alarm Rule</div>
+<input class="inp" id="ar-name" placeholder="Rule name (e.g. After-hours intrusion)" style="width:100%;margin-bottom:8px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+<div><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">TRIGGER</div><select class="inp" id="ar-trigger" style="width:100%"><option value="person_detected">👤 Person Detected</option><option value="vehicle_detected">🚗 Vehicle Detected</option><option value="animal_detected">🦊 Animal Detected</option><option value="any_motion">⚡ Any Motion</option><option value="zone_entry">🚧 Zone Entry</option><option value="speed_violation">🏎️ Speed Violation</option><option value="dwell_exceeded">⏱️ Dwell Exceeded</option><option value="plate_unknown">🔢 Unknown Plate</option><option value="plate_blacklist">🚫 Blacklisted Plate</option><option value="occupancy_high">👥 High Occupancy</option><option value="anomaly">📊 Anomaly</option></select></div>
+<div><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">SCHEDULE</div><select class="inp" id="ar-schedule" style="width:100%"><option value="always">Always</option><option value="business_hours">Business Hours</option><option value="after_hours">After Hours</option><option value="overnight">Overnight (9pm-6am)</option><option value="weekends">Weekends</option></select></div>
+</div>
+<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--text-t);margin-bottom:4px">ACTIONS (select multiple)</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-push" checked> 📱 Push</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-email"> 📧 Email</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-webhook"> 🔗 Webhook</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-escalate"> 🚨 Escalate</label>
+<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="ar-act-clip"> 🎬 Save Clip</label>
+</div></div>
+<div style="display:flex;gap:6px"><button class="btn" onclick="createAlarmRule()">Create Rule</button><button class="btn btn-s" onclick="document.getElementById('new-rule-form').style.display='none'">Cancel</button></div>
+</div>
+<!-- Rules List -->
+<div id="alarm-rules-list"></div>
+<!-- Webhook Config -->
+<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-t);letter-spacing:.06em;margin-bottom:8px">Webhook Endpoint</div><div style="display:flex;gap:6px;max-width:400px"><input class="inp" id="wh" placeholder="https://hooks.slack.com/..." style="flex:1;font-size:11px"><button class="btn btn-s" onclick="testWH()" style="font-size:10px">Test</button></div><div id="whr" style="font-size:10px;margin-top:4px;display:none"></div></div>
+</div></div>
 <div class="page" id="p-analyse"><div class="ph"><div><h1>Analyse</h1><div class="sub">Upload video for instant AI detection</div></div></div><div class="pb"><div class="drop-zone" style="max-width:500px;padding:36px 24px;border:1.5px dashed var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;text-align:center;transition:.15s;position:relative" id="dz"><input type="file" id="fi" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer"><h3 style="font-size:13px;font-weight:600;margin-bottom:3px">Drop video here</h3><p style="font-size:11px;color:var(--text-t)">MP4, MOV, AVI</p></div><div id="ap" style="display:none;margin-top:12px;font-size:12px;color:var(--text-s)">Analysing…</div><div class="rg" id="ar"></div></div></div>
 <div class="page" id="p-cases"><div class="ph"><div><h1>Cases</h1><div class="sub">Incident reports and investigations</div></div><button class="btn" onclick="document.getElementById('ncf').style.display='block'">+ New Case</button></div><div class="pb"><div id="ncf" style="display:none;max-width:420px;margin-bottom:16px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r)"><input class="inp" id="cti" placeholder="Case title" style="width:100%;margin-bottom:6px"><textarea class="inp" id="cde" placeholder="Description" style="width:100%;height:60px;resize:vertical;margin-bottom:8px"></textarea><div style="display:flex;gap:6px"><button class="btn" onclick="mkCase()">Create</button><button class="btn btn-s" onclick="document.getElementById('ncf').style.display='none'">Cancel</button></div></div><div id="csl"></div></div></div>
 <div class="page" id="p-health"><div class="ph"><div><h1>System Health</h1><div class="sub">Processing status and resources</div></div></div><div class="pb"><div class="sg"><div class="sc green"><div class="sv" style="color:var(--green)">Online</div><div class="sl">Status</div></div><div class="sc blue"><div class="sv">YOLO11m</div><div class="sl">Model</div></div><div class="sc purple"><div class="sv" id="he">—</div><div class="sl">Events</div></div><div class="sc orange"><div class="sv" id="hs">—</div><div class="sl">Snapshots</div></div><div class="sc cyan"><div class="sv" id="hp">0</div><div class="sl">Pipelines</div></div></div><div id="hd" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:400px"></div></div></div>
@@ -461,6 +484,41 @@ function addPlate(){
   });
 }
 document.querySelector('[data-p="lpr"]').addEventListener('click',()=>setTimeout(loadLPR,50));
+
+// Alarm Manager
+function loadAlarmRules(){
+  fetch('/alarm-manager').then(r=>r.json()).then(d=>{
+    const rules=d.rules||[];
+    const list=document.getElementById('alarm-rules-list');
+    if(!rules.length){list.innerHTML='<div class="empty" style="padding:20px">No alarm rules configured. Click + New Rule to create one.</div>';return;}
+    const triggers=d.trigger_types||{};
+    list.innerHTML=rules.map(r=>{
+      const t=triggers[r.trigger]||{icon:'⚡',label:r.trigger};
+      const actIcons=r.actions.map(a=>({push_notification:'📱',email:'📧',webhook:'🔗',sms:'💬',escalate:'🚨',save_clip:'🎬'}[a]||'•')).join(' ');
+      return`<div class="rule"><div class="rule-icon" style="background:${r.enabled?'var(--green-g)':'var(--card)'};color:${r.enabled?'var(--green)':'var(--text-t)'};font-size:14px">${t.icon}</div><div class="rule-info"><div class="rule-name">${r.name}</div><div class="rule-desc">${t.label} &middot; ${r.schedule} &middot; ${actIcons} &middot; Triggered ${r.trigger_count||0}x</div></div><div style="display:flex;gap:4px;align-items:center"><button class="btn btn-s" style="font-size:9px;padding:3px 7px" onclick="toggleRule('${r.id}')">${r.enabled?'Disable':'Enable'}</button><button class="btn btn-s" style="font-size:9px;padding:3px 7px;color:var(--red)" onclick="deleteRule('${r.id}')">×</button></div></div>`
+    }).join('');
+  });
+}
+function createAlarmRule(){
+  const name=document.getElementById('ar-name').value.trim();
+  const trigger=document.getElementById('ar-trigger').value;
+  const schedule=document.getElementById('ar-schedule').value;
+  const actions=[];
+  if(document.getElementById('ar-act-push').checked)actions.push('push_notification');
+  if(document.getElementById('ar-act-email').checked)actions.push('email');
+  if(document.getElementById('ar-act-webhook').checked)actions.push('webhook');
+  if(document.getElementById('ar-act-escalate').checked)actions.push('escalate');
+  if(document.getElementById('ar-act-clip').checked)actions.push('save_clip');
+  if(!name){alert('Enter a rule name');return;}
+  fetch('/alarm-manager/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,trigger,scope:{cameras:'all'},schedule,actions})}).then(r=>r.json()).then(()=>{
+    document.getElementById('ar-name').value='';
+    document.getElementById('new-rule-form').style.display='none';
+    loadAlarmRules();
+  });
+}
+function toggleRule(id){fetch('/alarm-manager/rules/'+id+'/toggle',{method:'POST'}).then(()=>loadAlarmRules())}
+function deleteRule(id){fetch('/alarm-manager/rules/'+id,{method:'DELETE'}).then(()=>loadAlarmRules())}
+document.querySelector('[data-p="alerts"]').addEventListener('click',()=>setTimeout(loadAlarmRules,50));
 
 // Webhook
 function testWH(){const u=document.getElementById('wh').value.trim();if(!u)return;const r=document.getElementById('whr');r.style.display='block';r.style.color='var(--text-t)';r.textContent='Sending…';fetch('/notifications/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}).then(x=>x.json()).then(d=>{r.style.color=d.success?'var(--green)':'var(--red)';r.textContent=d.success?'✓ Delivered':'✗ Failed'})}
